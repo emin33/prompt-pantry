@@ -62,22 +62,30 @@ export default function RecipeGenerator() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // Parse SSE events from buffer
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // keep incomplete line
+        // SSE events are delimited by double newlines
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || ""; // keep incomplete event
 
-        let eventType = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith("data: ") && eventType) {
+        for (const event of events) {
+          const lines = event.split("\n");
+          let eventType = "";
+          let dataStr = "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith("data: ")) {
+              dataStr += line.slice(6);
+            }
+          }
+
+          if (eventType && dataStr) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const data = JSON.parse(dataStr);
               handleSSEEvent(eventType, data);
             } catch {
               // Skip malformed data
             }
-            eventType = "";
           }
         }
       }
