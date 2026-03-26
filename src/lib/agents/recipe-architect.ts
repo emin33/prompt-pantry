@@ -4,7 +4,7 @@ CRITICAL: Your output must be ONLY valid JSON — no markdown, no explanation, n
 
 The JSON schema:
 {
-  "title": "string — the recipe title",
+  "title": "string — the dish name, concise and natural. Use just the dish name (e.g. 'Pad Thai', 'Butter Chicken') with a short descriptor ONLY if it's a specific variant (e.g. 'Smoked Brisket', 'Spicy Miso Ramen'). NEVER use colons, subtitles, 'Mastering', 'Ultimate', 'Edition', or novel-style titles.",
   "description": "string — 1-2 sentence hook, no generic phrases",
   "cuisine": "string — e.g. Indian, Japanese, Italian, Thai, Mexican, American, etc.",
   "category": "MUST be exactly one of: Pasta, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread",
@@ -52,7 +52,10 @@ Guidelines for the recipe content:
 - Steps should be ordered logically with appropriate timers
 - Notes should cover: key ingredient notes, substitutions, storage, and common mistakes
 - Avoid vague language ("cook until done") — use specific cues ("cook until deeply golden brown and edges are crispy, about 4-5 minutes")
-- Description should be compelling but not use generic phrases like "restaurant-quality" or "game-changing"`;
+- Description should be compelling but not use generic phrases like "restaurant-quality" or "game-changing"
+- CRITICAL: The servings MUST match the user's requested serving count exactly. Scale all ingredient amounts accordingly.
+- CRITICAL: Every single ingredient mentioned in the steps MUST appear in the ingredients list. Do not reference tamarind, sugar, fish sauce, or any other ingredient in the steps without listing it in the ingredients groups. Audit your steps against your ingredients list before finalizing.
+- Category guidance: Use "Meat" for dishes where meat/poultry is the star, "Seafood" for fish/shrimp-forward dishes, "Pasta" ONLY for Italian-style pasta dishes. Noodle stir-fries, ramen, pho, etc. should use whichever category best fits the primary protein or "Sides" if no clear protein.`;
 
 export function buildRecipeArchitectMessage(
   research: string,

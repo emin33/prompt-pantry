@@ -130,13 +130,17 @@ export default function RecipeGenerator() {
   };
 
   const pollUntilLive = useCallback(async (slug: string) => {
-    const url = `/recipes/${slug}`;
+    const url = `/recipes/${slug}/`;
     const maxAttempts = 30; // 30 * 5s = 2.5 min max
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       try {
-        const res = await fetch(url, { method: "HEAD" });
-        if (res.ok) return true;
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          const text = await res.text();
+          // Verify the page actually contains the recipe title, not a 404 page or old content
+          if (text.includes(slug)) return true;
+        }
       } catch {
         // Not live yet
       }
