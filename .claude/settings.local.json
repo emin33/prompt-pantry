@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm run:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(export PATH=\"/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(mv \"Slow-Cooker-Butter-Chicken-5.png\" \"instant-pot-butter-chicken.png\")",
+      "Bash(mv \"miso-marinated-skirt-steak_1170794-65862.jpg\" \"miso-lacquered-flap-steak.jpg\")",
+      "Bash(mv \"mongolian-beef-1.webp\" \"mongolian-beef-stir-fry.webp\")",
+      "Bash(node -e \":*)",
+      "Bash(rm -rf 00000000 00000001 00000002)",
+      "Bash(rm -f instant-pot-butter-chicken.png miso-lacquered-flap-steak.jpg mongolian-beef-stir-fry.jpg)",
+      "Bash(ls -la \"/c/Projects/Web/Prompt Pantry/public/images/favicon\"*)",
+      "Bash(mv favicon-256.png favicon.png)",
+      "Bash(rm -f favicon.ico favicon.svg favicon-32.png)",
+      "Bash(ls favicon* apple*)"
+    ]
+  }
+}
