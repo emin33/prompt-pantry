@@ -1,0 +1,88 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  cuisine: string;
+  category: string;
+  difficulty: string;
+  prepTime: number;
+  cookTime: number;
+  totalTime: number;
+  equipment?: string[];
+}
+
+const { title, description, cuisine, category, difficulty, prepTime, cookTime, totalTime, equipment } = Astro.props;
+
+const difficultyLevels: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+  Project: 3,
+};
+
+const flames = difficultyLevels[difficulty] || 1;
+---
+
+<div class="mb-8">
+  {/* Badges */}
+  <div class="flex flex-wrap gap-2 mb-4">
+    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-terracotta/10 text-terracotta">
+      {cuisine}
+    </span>
+    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-sage-light text-sage-dark">
+      {category}
+    </span>
+  </div>
+
+  <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-3">{title}</h1>
+  <p class="text-lg text-warm-gray max-w-2xl mb-6">{description}</p>
+
+  {/* Meta bar */}
+  <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-warm-gray">
+    {/* Difficulty */}
+    <div class="flex items-center gap-1.5" title={difficulty}>
+      <span class="flex gap-0.5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <svg
+            class={`w-4 h-4 ${i < flames ? "text-golden" : "text-warm-gray/20"}`}
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2c-1 4-4 6-4 10a4 4 0 008 0c0-4-3-6-4-10z" />
+          </svg>
+        ))}
+      </span>
+      {difficulty === "Project" && (
+        <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-golden-light text-golden">
+          Project
+        </span>
+      )}
+    </div>
+
+    <span class="text-warm-gray/30">|</span>
+
+    {/* Times */}
+    <div class="flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12,6 12,12 16,14" />
+      </svg>
+      <span>Prep {prepTime}m</span>
+      <span class="text-warm-gray/30 mx-0.5">&middot;</span>
+      <span>Cook {cookTime}m</span>
+      <span class="text-warm-gray/30 mx-0.5">&middot;</span>
+      <span class="font-medium text-charcoal">Total {totalTime}m</span>
+    </div>
+  </div>
+
+  {/* Equipment */}
+  {equipment && equipment.length > 0 && (
+    <div class="mt-4 flex flex-wrap gap-2">
+      {equipment.map((item) => (
+        <span class="text-xs px-2 py-1 rounded bg-warm-gray/8 text-warm-gray">
+          {item}
+        </span>
+      ))}
+    </div>
+  )}
+</div>

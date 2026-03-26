@@ -1,0 +1,82 @@
+---
+interface Props {
+  title: string;
+  slug: string;
+  description: string;
+  cuisine: string;
+  difficulty: string;
+  totalTime: number;
+  category: string;
+}
+
+const { title, slug, description, cuisine, difficulty, totalTime, category } = Astro.props;
+
+const difficultyLevels: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+  Project: 3,
+};
+
+const flames = difficultyLevels[difficulty] || 1;
+
+// Category color accents
+const categoryColors: Record<string, string> = {
+  Pasta: "bg-golden-light border-golden/20",
+  Meat: "bg-terracotta/5 border-terracotta/15",
+  Seafood: "bg-sage-light/50 border-sage/20",
+  Vegetarian: "bg-sage-light border-sage/20",
+  Soup: "bg-golden-light/50 border-golden/15",
+  Dessert: "bg-terracotta/5 border-terracotta/10",
+  Breakfast: "bg-golden-light border-golden/20",
+  Sides: "bg-sage-light/30 border-sage/15",
+  Sauces: "bg-terracotta/5 border-terracotta/10",
+  Bread: "bg-golden-light/50 border-golden/15",
+};
+
+const accent = categoryColors[category] || "bg-cream border-warm-gray/15";
+---
+
+<a
+  href={`/recipes/${slug}`}
+  class="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden no-underline"
+>
+  {/* Color accent strip */}
+  <div class={`h-1.5 ${accent}`} />
+
+  <div class="p-5">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <h3 class="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug">
+        {title}
+      </h3>
+    </div>
+
+    <p class="text-sm text-warm-gray line-clamp-2 mb-4">{description}</p>
+
+    <div class="flex items-center justify-between text-xs text-warm-gray">
+      <div class="flex items-center gap-3">
+        <span class="px-2 py-0.5 rounded-full bg-terracotta/8 text-terracotta font-medium">
+          {cuisine}
+        </span>
+        <span class="flex gap-0.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <svg
+              class={`w-3 h-3 ${i < flames ? "text-golden" : "text-warm-gray/20"}`}
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2c-1 4-4 6-4 10a4 4 0 008 0c0-4-3-6-4-10z" />
+            </svg>
+          ))}
+        </span>
+      </div>
+      <div class="flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12,6 12,12 16,14" />
+        </svg>
+        {totalTime} min
+      </div>
+    </div>
+  </div>
+</a>

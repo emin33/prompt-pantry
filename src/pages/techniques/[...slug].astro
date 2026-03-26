@@ -1,0 +1,93 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import RecipeCard from "../../components/RecipeCard.astro";
+
+export async function getStaticPaths() {
+  const techniques = await getCollection("techniques", ({ data }) => data.published);
+  return techniques.map((technique) => ({
+    params: { slug: technique.data.slug },
+    props: { technique },
+  }));
+}
+
+const { technique } = Astro.props;
+const { Content } = await render(technique);
+const { data } = technique;
+
+// Find recipes that use this technique
+const recipes = await getCollection("recipes", ({ data: d }) =>
+  d.published && d.techniques.includes(data.slug)
+);
+
+// Related techniques
+const allTechniques = await getCollection("techniques", ({ data: d }) =>
+  d.published && d.slug !== data.slug
+);
+const related = allTechniques.filter((t) =>
+  data.relatedTechniques.includes(t.data.slug)
+);
+---
+
+<Layout title={data.title} description={data.description} ogType="article">
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-sage-light text-sage-dark">
+          {data.category}
+        </span>
+        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-golden-light text-golden">
+          {data.difficulty}
+        </span>
+      </div>
+      <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-3">{data.title}</h1>
+      <p class="text-lg text-warm-gray">{data.description}</p>
+    </div>
+
+    <div class="recipe-prose">
+      <Content />
+    </div>
+
+    {/* Related techniques */}
+    {related.length > 0 && (
+      <section class="mt-12 pt-8 border-t border-warm-gray/15">
+        <h2 class="font-display text-xl text-charcoal mb-4">Related Techniques</h2>
+        <div class="space-y-2">
+          {related.map((t) => (
+            <a
+              href={`/techniques/${t.data.slug}`}
+              class="group flex items-center gap-2 p-3 rounded-lg hover:bg-sage-light/30 transition-colors no-underline"
+            >
+              <svg class="w-4 h-4 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span class="text-sm font-medium text-charcoal group-hover:text-sage-dark transition-colors">
+                {t.data.title}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Recipes using this technique */}
+    {recipes.length > 0 && (
+      <section class="mt-12 pt-8 border-t border-warm-gray/15">
+        <h2 class="font-display text-xl text-charcoal mb-6">Recipes Using This Technique</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {recipes.map((r) => (
+            <RecipeCard
+              title={r.data.title}
+              slug={r.data.slug}
+              description={r.data.description}
+              cuisine={r.data.cuisine}
+              difficulty={r.data.difficulty}
+              totalTime={r.data.totalTime}
+              category={r.data.category}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+</Layout>

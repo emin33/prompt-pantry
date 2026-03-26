@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #FAF7F2;
+  --color-warm-white: #FFFDFB;
+  --color-charcoal: #2C2C2C;
+  --color-warm-gray: #8C8377;
+  --color-terracotta: #C75B3F;
+  --color-terracotta-light: #E8927A;
+  --color-terracotta-dark: #A84832;
+  --color-sage: #7A9E7E;
+  --color-sage-light: #E8F0E9;
+  --color-sage-dark: #5F7E62;
+  --color-golden: #D4A853;
+  --color-golden-light: #FDF4E0;
+
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    @apply bg-cream text-charcoal antialiased;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body text-base leading-relaxed;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display font-normal;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl leading-tight;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl leading-snug;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl leading-snug;
+  }
+
+  a {
+    @apply text-terracotta hover:text-terracotta-dark transition-colors;
+  }
+
+  ::selection {
+    @apply bg-golden-light text-charcoal;
+  }
+}
+
+@layer components {
+  .recipe-prose h2 {
+    @apply mt-10 mb-4 pb-2 border-b border-warm-gray/20;
+  }
+
+  .recipe-prose h3 {
+    @apply mt-6 mb-3 font-display;
+  }
+
+  .recipe-prose p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .recipe-prose ul {
+    @apply mb-4 pl-5 list-disc;
+  }
+
+  .recipe-prose li {
+    @apply mb-1;
+  }
+
+  .recipe-prose strong {
+    @apply font-semibold text-charcoal;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  .no-print,
+  header,
+  footer,
+  .cook-mode-toggle,
+  .jump-to-recipe,
+  .recipe-filter,
+  .related-recipes {
+    display: none !important;
+  }
+
+  .recipe-prose h2 {
+    border-bottom: 1px solid #ccc;
+    page-break-after: avoid;
+  }
+
+  .recipe-prose h3 {
+    page-break-after: avoid;
+  }
+
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+}

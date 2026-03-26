@@ -1,0 +1,102 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+import RecipeCard from "../components/RecipeCard.astro";
+
+const recipes = await getCollection("recipes", ({ data }) => data.published);
+
+// Sort by publishedDate descending
+const sorted = recipes.sort(
+  (a, b) => b.data.publishedDate.localeCompare(a.data.publishedDate)
+);
+
+const featured = sorted[0];
+const recent = sorted.slice(1, 7);
+---
+
+<Layout title="Prompt Pantry">
+  {/* Hero */}
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 pt-16 pb-12 text-center">
+    <h1 class="font-display text-5xl md:text-6xl text-charcoal mb-4">
+      Prompt Pantry
+    </h1>
+    <p class="text-xl text-warm-gray max-w-xl mx-auto mb-8">
+      AI-researched recipes for real kitchens.
+    </p>
+    <div class="w-16 h-0.5 bg-terracotta/40 mx-auto" />
+  </section>
+
+  {/* Featured recipe */}
+  {featured && (
+    <section class="max-w-3xl mx-auto px-4 sm:px-6 mb-16">
+      <a
+        href={`/recipes/${featured.data.slug}`}
+        class="group block bg-warm-white rounded-2xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden no-underline"
+      >
+        <div class="h-2 bg-gradient-to-r from-terracotta via-golden to-sage" />
+        <div class="p-8">
+          <span class="text-xs font-medium text-terracotta tracking-wide uppercase mb-3 block">
+            Featured Recipe
+          </span>
+          <h2 class="font-display text-3xl md:text-4xl text-charcoal group-hover:text-terracotta transition-colors mb-3">
+            {featured.data.title}
+          </h2>
+          <p class="text-warm-gray mb-4 max-w-xl">
+            {featured.data.description}
+          </p>
+          <div class="flex items-center gap-4 text-sm text-warm-gray">
+            <span class="px-2.5 py-1 rounded-full bg-terracotta/8 text-terracotta font-medium">
+              {featured.data.cuisine}
+            </span>
+            <span>{featured.data.totalTime} min</span>
+            <span>{featured.data.difficulty}</span>
+          </div>
+        </div>
+      </a>
+    </section>
+  )}
+
+  {/* Recent recipes */}
+  {recent.length > 0 && (
+    <section class="max-w-5xl mx-auto px-4 sm:px-6 mb-16">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-display text-2xl text-charcoal">Recent Recipes</h2>
+        <a
+          href="/recipes"
+          class="text-sm font-medium text-terracotta hover:text-terracotta-dark transition-colors"
+        >
+          Browse all &rarr;
+        </a>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {recent.map((r) => (
+          <RecipeCard
+            title={r.data.title}
+            slug={r.data.slug}
+            description={r.data.description}
+            cuisine={r.data.cuisine}
+            difficulty={r.data.difficulty}
+            totalTime={r.data.totalTime}
+            category={r.data.category}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {/* What is this */}
+  <section class="max-w-xl mx-auto px-4 sm:px-6 mb-16 text-center">
+    <h2 class="font-display text-2xl text-charcoal mb-3">What is this?</h2>
+    <p class="text-warm-gray mb-4">
+      Every recipe here is built from deep research — techniques, ratios, and
+      methods sourced from renowned chefs and culinary traditions, then
+      synthesized into something original and practical.
+    </p>
+    <a
+      href="/about"
+      class="text-sm font-medium text-terracotta hover:text-terracotta-dark transition-colors"
+    >
+      Learn more about the project &rarr;
+    </a>
+  </section>
+</Layout>
