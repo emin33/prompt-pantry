@@ -14,7 +14,12 @@
       "Bash(ls -la \"/c/Projects/Web/Prompt Pantry/public/images/favicon\"*)",
       "Bash(mv favicon-256.png favicon.png)",
       "Bash(rm -f favicon.ico favicon.svg favicon-32.png)",
-      "Bash(ls favicon* apple*)"
+      "Bash(ls favicon* apple*)",
+      "WebSearch",
+      "WebFetch(domain:www.simeongriggs.dev)",
+      "WebFetch(domain:ixd.prattsi.org)",
+      "WebFetch(domain:www.subframe.com)",
+      "WebFetch(domain:www.thekitchn.com)"
     ]
   }
 }

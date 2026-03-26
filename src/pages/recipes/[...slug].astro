@@ -80,9 +80,35 @@ const related = allRecipes
     </section>
 
     {/* Recipe body (steps, notes, etc.) */}
-    <div class="recipe-prose">
+    <div class="recipe-prose" id="recipe-body">
       <Content />
     </div>
+
+    {/* Wrap steps in cards via client-side JS */}
+    <script>
+      function wrapSteps() {
+        const prose = document.getElementById('recipe-body');
+        if (!prose) return;
+
+        const h3s = prose.querySelectorAll('h3');
+        h3s.forEach((h3) => {
+          const card = document.createElement('div');
+          card.className = 'step-card';
+
+          h3.parentNode?.insertBefore(card, h3);
+          card.appendChild(h3);
+
+          // Move siblings until next h3 or h2
+          let next = card.nextSibling;
+          while (next && !(next instanceof HTMLElement && (next.tagName === 'H3' || next.tagName === 'H2'))) {
+            const toMove = next;
+            next = next.nextSibling;
+            card.appendChild(toMove);
+          }
+        });
+      }
+      wrapSteps();
+    </script>
   </article>
 
   {/* Related recipes */}

@@ -1,6 +1,7 @@
 import { ScalerProvider } from "./ServingScaler";
 import ServingScaler from "./ServingScaler";
 import IngredientList from "./IngredientList";
+import CollapsibleSection from "./CollapsibleSection";
 
 interface IngredientItem {
   name: string;
@@ -21,14 +22,13 @@ interface Props {
 export default function RecipeIngredients({ servings, groups }: Props) {
   return (
     <ScalerProvider baseServings={servings}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl md:text-3xl text-charcoal !mt-0 !mb-0 !border-0 !pb-0">
-            Ingredients
-          </h2>
-          <ServingScaler baseServings={servings} />
-        </div>
-        <IngredientList groups={groups} />
+      <div className="bg-warm-white rounded-xl border border-warm-gray/10 p-6 md:p-8">
+        <CollapsibleSection title="Ingredients" icon="&#x1F9C2;">
+          <div className="flex items-center justify-end mb-4">
+            <ServingScaler baseServings={servings} />
+          </div>
+          <IngredientList groups={groups} />
+        </CollapsibleSection>
       </div>
     </ScalerProvider>
   );
