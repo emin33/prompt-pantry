@@ -80,10 +80,13 @@ export async function callClaudeWithWebSearch(
 export async function callClaudeMultiAgentResearch(
   apiKey: string,
   researchBriefs: Array<{ focus: string; prompt: string }>,
-  maxSearchesPerAgent: number = 10
+  maxSearchesPerAgent: number | number[] = 10
 ): Promise<string> {
   const results = await Promise.all(
-    researchBriefs.map(async (brief) => {
+    researchBriefs.map(async (brief, index) => {
+      const maxSearches = Array.isArray(maxSearchesPerAgent)
+        ? maxSearchesPerAgent[index] ?? maxSearchesPerAgent[maxSearchesPerAgent.length - 1]
+        : maxSearchesPerAgent;
       try {
         const result = await callClaudeWithWebSearch(
           apiKey,
@@ -93,7 +96,7 @@ Look for professional chefs, food scientists, acclaimed cookbooks, and authorita
 Be specific with findings: include exact ratios, temperatures, timing, and technique details.
 Cite your sources.`,
           brief.prompt,
-          maxSearchesPerAgent
+          maxSearches
         );
         return `## ${brief.focus}\n\n${result}`;
       } catch (err) {

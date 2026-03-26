@@ -141,7 +141,7 @@ Research brief for context:\n${researchBrief}`,
       const research = await callClaudeMultiAgentResearch(
         env.ANTHROPIC_API_KEY,
         researchBriefs,
-        15 // max searches per agent = up to 45 total searches
+        [20, 10, 5] // recipes: 20 searches, techniques: 10, adaptations: 5
       );
 
       await sendSSE(writer, encoder, "agent", {
