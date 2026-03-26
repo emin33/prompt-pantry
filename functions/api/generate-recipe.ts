@@ -86,53 +86,30 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         agent: 1,
         name: "Research Team",
         status: "running",
-        detail: "Deploying 5 research agents in parallel...",
+        detail: "Deploying 2 research agents in parallel...",
       });
 
       const dish = input.dish;
       const researchBriefs = [
         {
           focus: "Best Recipes, Techniques & Food Science",
-          prompt: `You are deeply researching "${dish}" for a recipe project. Search broadly and thoroughly — use many searches.
-
-Your job: find the BEST versions of this dish from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, Michelin restaurants, etc.). For each source, extract:
+          prompt: `You are deeply researching "${dish}" for a recipe project. Search for the BEST versions from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, etc.). For each source, extract:
 - Exact techniques, temperatures, and timing
 - Ingredient ratios and proportions
-- The food science behind why their approach works (Maillard reaction temps, emulsification, acid/fat/salt balance, etc.)
+- The food science behind why their approach works
 - What makes their version exceptional vs. average
 
-Search for at least 5-8 different acclaimed sources. Compare their approaches and note consensus vs. disagreements.
+Compare approaches and note consensus vs. disagreements.
 
 Research brief for context:\n${researchBrief}`,
         },
         {
           focus: "Common Mistakes, Pro Tips & Regional Authenticity",
-          prompt: `You are deeply researching "${dish}" for a recipe project. Search broadly and thoroughly — use many searches.
+          prompt: `You are researching "${dish}" for a recipe project. Cover two areas:
 
-Your job covers two areas:
+1. MISTAKES & TIPS: Find the most common mistakes home cooks make with this dish and professional tips to avoid them. Focus on pitfalls that separate mediocre from excellent results.
 
-1. MISTAKES & TIPS: Find the most common mistakes home cooks make with this dish and professional tips to avoid them. Search cooking forums, chef interviews, troubleshooting guides. Focus on pitfalls that separate mediocre from excellent results.
-
-2. AUTHENTICITY & VARIATIONS: Research how this dish is prepared in its region of origin vs. adaptations elsewhere. What are the traditional ingredients, techniques, and serving styles? What do purists insist on? What regional twists exist?
-
-Search for at least 5-8 different sources across both areas.
-
-Research brief for context:\n${researchBrief}`,
-        },
-        {
-          focus: "Home Kitchen Adaptations & Equipment",
-          prompt: `You are deeply researching "${dish}" for a home cook recipe project. Search broadly and thoroughly — use many searches.
-
-The cook has access to: ${input.cookware.join(", ")}.
-
-Your job: find how to achieve professional-quality results with home equipment. Search for:
-- Equipment-specific techniques and substitutions for home kitchens
-- Batch sizing and timing adjustments for home stoves/ovens
-- Make-ahead strategies, storage, and reheating tips
-- Ingredient sourcing tips and acceptable substitutions
-- Scaling considerations
-
-Search for at least 4-6 different sources.
+2. AUTHENTICITY & VARIATIONS: How is this dish prepared in its region of origin vs. adaptations elsewhere? What are the traditional ingredients and techniques? What do purists insist on?
 
 Research brief for context:\n${researchBrief}`,
         },
@@ -141,14 +118,14 @@ Research brief for context:\n${researchBrief}`,
       const research = await callClaudeMultiAgentResearch(
         env.ANTHROPIC_API_KEY,
         researchBriefs,
-        [20, 10, 5] // recipes: 20 searches, techniques: 10, adaptations: 5
+        [8, 4] // recipes: 8 searches, mistakes/authenticity: 4
       );
 
       await sendSSE(writer, encoder, "agent", {
         agent: 1,
         name: "Research Team",
         status: "complete",
-        summary: `3 agents completed parallel research`,
+        summary: `2 agents completed parallel research`,
       });
 
       // Agent 2: Recipe Architect (Gemini free, JSON mode)
