@@ -3,7 +3,7 @@ import GeneratorForm, { type GeneratorInput } from "./GeneratorForm";
 import GeneratorProgress from "./GeneratorProgress";
 import RecipePreview from "./RecipePreview";
 
-type State = "idle" | "generating" | "preview" | "publishing" | "published";
+type State = "idle" | "generating" | "preview" | "publishing" | "deploying" | "published";
 
 interface AgentStatus {
   agent: number;
@@ -121,11 +121,32 @@ export default function RecipeGenerator() {
     }
   };
 
+  const pollUntilLive = useCallback(async (slug: string) => {
+    const url = `/recipes/${slug}`;
+    const maxAttempts = 30; // 30 * 5s = 2.5 min max
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      try {
+        const res = await fetch(url, { method: "HEAD" });
+        if (res.ok) return true;
+      } catch {
+        // Not live yet
+      }
+    }
+    return false;
+  }, []);
+
   const handlePublish = useCallback(
     async (password: string) => {
       if (!recipe) return;
       setState("publishing");
       setPublishError(null);
+
+      // Add deploy step to agents
+      setAgents((prev) => [
+        ...prev.map((a) => ({ ...a, status: "complete" as const })),
+        { agent: 3, name: "Publishing & Deploying", status: "running" as const, summary: "Committing to repository..." },
+      ]);
 
       try {
         const res = await fetch("/api/publish-recipe", {
@@ -145,7 +166,38 @@ export default function RecipeGenerator() {
           throw new Error(data.error || `HTTP ${res.status}`);
         }
 
-        setState("published");
+        // Switch to deploying state and show progress
+        setState("deploying");
+        setAgents((prev) =>
+          prev.map((a) =>
+            a.agent === 3
+              ? { ...a, summary: "Building & deploying — waiting for site to update..." }
+              : a
+          )
+        );
+
+        // Poll until the recipe page is live
+        const isLive = await pollUntilLive(recipe.slug);
+
+        if (isLive) {
+          setAgents((prev) =>
+            prev.map((a) =>
+              a.agent === 3
+                ? { ...a, status: "complete" as const, summary: "Recipe is live!" }
+                : a
+            )
+          );
+          setState("published");
+        } else {
+          setAgents((prev) =>
+            prev.map((a) =>
+              a.agent === 3
+                ? { ...a, status: "complete" as const, summary: "Published but deploy may still be in progress. Check back shortly." }
+                : a
+            )
+          );
+          setState("published");
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to publish";
@@ -153,7 +205,7 @@ export default function RecipeGenerator() {
         setState("preview");
       }
     },
-    [recipe]
+    [recipe, pollUntilLive]
   );
 
   const handleRegenerate = () => {
@@ -174,15 +226,38 @@ export default function RecipeGenerator() {
         />
       )}
 
-      {/* Progress — shown during generation */}
-      {state === "generating" && (
+      {/* Progress — shown during generation and deploying */}
+      {(state === "generating" || state === "deploying") && (
         <GeneratorProgress agents={agents} error={error} />
       )}
 
-      {/* Preview — shown after generation */}
-      {(state === "preview" ||
-        state === "publishing" ||
-        state === "published") &&
+      {/* Published — show success with link */}
+      {state === "published" && recipe && (
+        <div className="text-center py-12 space-y-4">
+          <svg className="w-16 h-16 text-sage mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <h3 className="font-display text-2xl text-charcoal">Recipe Published!</h3>
+          <p className="text-warm-gray">{recipe.title} is now live on the site.</p>
+          <div className="flex justify-center gap-4">
+            <a
+              href={`/recipes/${recipe.slug}`}
+              className="px-6 py-2.5 bg-terracotta text-warm-white rounded-lg hover:bg-terracotta/90 transition-colors no-underline"
+            >
+              View Recipe
+            </a>
+            <button
+              onClick={handleRegenerate}
+              className="px-6 py-2.5 border border-warm-gray/20 text-charcoal rounded-lg hover:bg-cream transition-colors"
+            >
+              Generate Another
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Preview — shown after generation, before publish */}
+      {(state === "preview" || state === "publishing") &&
         recipe && (
           <RecipePreview
             preview={recipe.preview as any}
@@ -191,7 +266,7 @@ export default function RecipeGenerator() {
             onPublish={handlePublish}
             onRegenerate={handleRegenerate}
             publishing={state === "publishing"}
-            published={state === "published"}
+            published={false}
             publishError={publishError}
           />
         )}
