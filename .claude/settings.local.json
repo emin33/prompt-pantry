@@ -22,7 +22,9 @@
       "WebFetch(domain:www.thekitchn.com)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth refresh -s workflow)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth refresh -h github.com -s workflow)",
-      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run watch 23621364667 --repo emin33/prompt-pantry)"
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run watch 23621364667 --repo emin33/prompt-pantry)",
+      "Bash(gh run:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo emin33/prompt-pantry --limit 5)"
     ]
   }
 }
