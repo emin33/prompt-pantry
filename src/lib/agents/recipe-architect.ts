@@ -44,6 +44,7 @@ The JSON schema:
 }
 
 Guidelines for the recipe content:
+- CRITICAL: If dietary restrictions are specified, YOU are the enforcer. The research may include non-compliant ingredients and techniques (intentionally, to capture the best knowledge). It is YOUR job to adapt the recipe to meet dietary constraints while preserving as much of the original flavor, technique, and character as possible. Every ingredient must comply. Call out key substitutions in the Notes section.
 - Tailor complexity to the requested difficulty level
 - Only use equipment from the user's available cookware list
 - Include specific temperatures, times, and visual cues

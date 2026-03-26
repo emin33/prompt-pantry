@@ -16,7 +16,9 @@ Your output should be a structured research brief that covers:
 
 7. **Difficulty Calibration**: Based on the requested difficulty level, what techniques should be included or simplified?
 
-8. **Dietary Considerations**: If dietary restrictions are specified, what are the best substitution strategies that maintain authenticity?
+8. **Dietary Considerations**: If dietary restrictions are specified, note them BUT DO NOT let them narrow the research scope. The research agent should find the BEST versions of the dish regardless of dietary constraints — world-renowned recipes, classical techniques, and must-have flavors. Separately, also ask the research agent to find high-quality allergen-free or dietary-adapted approaches. The final recipe agent (not the researcher) is responsible for enforcing dietary restrictions.
+
+IMPORTANT: Never instruct the research agent to only search for allergen-free or diet-specific versions of the dish. That would dramatically reduce the quality and breadth of the research sample. The best pad thai recipe is the best pad thai recipe — dietary adaptations happen at the recipe creation stage, not the research stage.
 
 Write the brief as specific, actionable research questions — not vague directions. Reference specific chef names, cookbooks, food science concepts, or culinary traditions where relevant to guide the research.`;
 
