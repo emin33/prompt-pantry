@@ -16,6 +16,7 @@ interface RecipeResult {
   slug: string;
   title: string;
   mdx: string;
+  research?: string;
   preview: Record<string, unknown>;
 }
 
@@ -133,6 +134,7 @@ export default function RecipeGenerator() {
           body: JSON.stringify({
             slug: recipe.slug,
             mdx: recipe.mdx,
+            research: recipe.research,
             password,
           }),
         });

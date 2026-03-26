@@ -31,6 +31,16 @@ const related = allTechniques.filter((t) =>
 
 <Layout title={data.title} description={data.description} ogType="article">
   <article class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <button
+      onclick="history.back()"
+      class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-terracotta transition-colors mb-6 no-underline cursor-pointer bg-transparent border-none p-0"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back
+    </button>
+
     <div class="mb-8">
       <div class="flex items-center gap-2 mb-3">
         <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-sage-light text-sage-dark">

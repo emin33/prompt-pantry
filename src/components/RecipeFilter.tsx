@@ -11,6 +11,7 @@ interface RecipeData {
   tags: string[];
   publishedDate: string;
   image?: string;
+  source?: string;
 }
 
 interface Props {
@@ -76,6 +77,7 @@ export default function RecipeFilter({ recipes }: Props) {
   const [cuisine, setCuisine] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState("");
+  const [source, setSource] = useState("");
   const [sort, setSort] = useState<SortOption>("newest");
 
   const cuisines = useMemo(
@@ -102,6 +104,7 @@ export default function RecipeFilter({ recipes }: Props) {
     if (cuisine) result = result.filter((r) => r.cuisine === cuisine);
     if (category) result = result.filter((r) => r.category === category);
     if (difficulty) result = result.filter((r) => r.difficulty === difficulty);
+    if (source) result = result.filter((r) => (r.source || "curated") === source);
 
     result = [...result].sort((a, b) => {
       if (sort === "newest")
@@ -111,9 +114,9 @@ export default function RecipeFilter({ recipes }: Props) {
     });
 
     return result;
-  }, [recipes, search, cuisine, category, difficulty, sort]);
+  }, [recipes, search, cuisine, category, difficulty, source, sort]);
 
-  const hasFilters = search || cuisine || category || difficulty;
+  const hasFilters = search || cuisine || category || difficulty || source;
 
   return (
     <div>
@@ -166,6 +169,16 @@ export default function RecipeFilter({ recipes }: Props) {
         </select>
 
         <select
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-warm-gray/20 bg-warm-white text-sm text-charcoal focus:outline-none focus:border-terracotta/40"
+        >
+          <option value="">All Sources</option>
+          <option value="curated">Curated</option>
+          <option value="community">Community</option>
+        </select>
+
+        <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
           className="px-3 py-2 rounded-lg border border-warm-gray/20 bg-warm-white text-sm text-charcoal focus:outline-none focus:border-terracotta/40"
@@ -182,6 +195,7 @@ export default function RecipeFilter({ recipes }: Props) {
               setCuisine("");
               setCategory("");
               setDifficulty("");
+              setSource("");
             }}
             className="text-xs text-warm-gray hover:text-terracotta transition-colors"
           >
@@ -221,9 +235,16 @@ export default function RecipeFilter({ recipes }: Props) {
                 )}
 
                 <div className="p-5">
-                  <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
-                    {r.title}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug flex-1">
+                      {r.title}
+                    </h3>
+                    {r.source === "community" && (
+                      <span className="px-2 py-0.5 rounded-full bg-sage-light text-sage-dark text-[10px] font-semibold uppercase tracking-wide flex-shrink-0">
+                        Community
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-warm-gray line-clamp-2 mb-4 leading-relaxed">
                     {r.description}
                   </p>

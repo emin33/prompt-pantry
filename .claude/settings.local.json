@@ -19,7 +19,10 @@
       "WebFetch(domain:www.simeongriggs.dev)",
       "WebFetch(domain:ixd.prattsi.org)",
       "WebFetch(domain:www.subframe.com)",
-      "WebFetch(domain:www.thekitchn.com)"
+      "WebFetch(domain:www.thekitchn.com)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth refresh -s workflow)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth refresh -h github.com -s workflow)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run watch 23621364667 --repo emin33/prompt-pantry)"
     ]
   }
 }

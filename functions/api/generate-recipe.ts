@@ -133,6 +133,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         slug,
         title: recipeData.title,
         mdx,
+        research,
         preview: {
           title: recipeData.title,
           description: recipeData.description,

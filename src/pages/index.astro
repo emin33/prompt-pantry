@@ -3,7 +3,7 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import RecipeCard from "../components/RecipeCard.astro";
 
-const recipes = await getCollection("recipes", ({ data }) => data.published);
+const recipes = await getCollection("recipes", ({ data }) => data.published && data.source !== "community");
 
 // Sort by publishedDate descending
 const sorted = recipes.sort(

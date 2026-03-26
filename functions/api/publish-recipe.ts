@@ -7,6 +7,7 @@ interface Env {
 interface PublishRequest {
   slug: string;
   mdx: string;
+  research?: string;
   password: string;
 }
 
@@ -85,6 +86,30 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (!commitRes.ok) {
       const text = await commitRes.text();
       throw new Error(`GitHub API error (${commitRes.status}): ${text}`);
+    }
+
+    // Commit research report if provided
+    if (input.research) {
+      const researchPath = `research/${slug}.md`;
+      const researchContent = btoa(
+        unescape(encodeURIComponent(`# Research: ${slug}\n\n${input.research}`))
+      );
+      await fetch(
+        `https://api.github.com/repos/${repo}/contents/${researchPath}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+            Accept: "application/vnd.github+json",
+            "User-Agent": "prompt-pantry-generator",
+          },
+          body: JSON.stringify({
+            message: `Add research: ${slug}`,
+            content: researchContent,
+            branch: "master",
+          }),
+        }
+      );
     }
 
     // Trigger Cloudflare Pages rebuild
