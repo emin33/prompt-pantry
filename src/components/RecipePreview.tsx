@@ -47,6 +47,7 @@ interface Props {
   mdx: string;
   onPublish: () => void;
   onRegenerate: () => void;
+  onRegenerateWithFeedback: (feedback: string) => void;
   publishing: boolean;
   published: boolean;
   publishError: string | null;
@@ -78,11 +79,14 @@ export default function RecipePreview({
   mdx,
   onPublish,
   onRegenerate,
+  onRegenerateWithFeedback,
   publishing,
   published,
   publishError,
 }: Props) {
   const [showMdx, setShowMdx] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState("");
 
   return (
     <div className="space-y-6">
@@ -233,25 +237,63 @@ export default function RecipePreview({
           </div>
         ) : (
           <>
+            {/* Publish button */}
+            <button
+              type="button"
+              onClick={() => onPublish()}
+              disabled={publishing}
+              className="w-full px-6 py-2.5 rounded-lg bg-sage text-white font-semibold text-sm hover:bg-sage-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {publishing ? "Publishing..." : "Publish to Site"}
+            </button>
+
+            {/* Regenerate options */}
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => onPublish()}
+                onClick={onRegenerate}
                 disabled={publishing}
-                className="flex-1 px-6 py-2.5 rounded-lg bg-sage text-white font-semibold text-sm hover:bg-sage-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 rounded-lg border border-warm-gray/20 text-muted font-medium text-sm hover:border-terracotta/40 hover:text-terracotta transition-colors disabled:opacity-50"
               >
-                {publishing ? "Publishing..." : "Publish to Site"}
+                Start Over
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFeedback(!showFeedback)}
+                disabled={publishing}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-warm-gray/20 text-muted font-medium text-sm hover:border-terracotta/40 hover:text-terracotta transition-colors disabled:opacity-50"
+              >
+                Regenerate with Feedback
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={onRegenerate}
-              disabled={publishing}
-              className="w-full px-4 py-2.5 rounded-lg border border-warm-gray/20 text-muted font-medium text-sm hover:border-terracotta/40 hover:text-terracotta transition-colors disabled:opacity-50"
-            >
-              Regenerate
-            </button>
+            {/* Feedback form */}
+            {showFeedback && (
+              <div className="p-4 rounded-lg bg-cream border border-warm-gray/15 space-y-3">
+                <p className="text-xs text-muted">
+                  ⚠️ Regenerating costs API credits. Describe what you'd like changed and we'll re-run the full pipeline with your feedback.
+                </p>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="e.g. 'Too many steps, simplify it' or 'Make it spicier' or 'Use chicken instead of shrimp'"
+                  className="w-full px-3 py-2 rounded-lg border border-warm-gray/20 bg-warm-white text-charcoal placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-terracotta/30 resize-none"
+                  rows={3}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (feedback.trim()) {
+                      onRegenerateWithFeedback(feedback.trim());
+                    }
+                  }}
+                  disabled={!feedback.trim()}
+                  className="w-full px-4 py-2 rounded-lg bg-terracotta text-white font-medium text-sm hover:bg-terracotta-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Regenerate with Changes
+                </button>
+              </div>
+            )}
           </>
         )}
 

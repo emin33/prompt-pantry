@@ -24,6 +24,7 @@ interface GenerateRequest {
   dietary: string;
   servings: number;
   password: string;
+  feedback?: string;
 }
 
 function sendSSE(
@@ -71,9 +72,48 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   // Run the pipeline in the background
   (async () => {
     try {
-      // Agent 0: Prompt Engineer (Gemini free)
+      // Step 0: Validate the dish is actually food (Gemini free, fast)
       await sendSSE(writer, encoder, "agent", {
         agent: 0,
+        name: "Validating Input",
+        status: "running",
+      });
+
+      const validationResult = await callGemini(
+        env.GEMINI_API_KEY,
+        `You are a food validator. Your ONLY job is to determine if the user's input is a real food, dish, or recipe that can be cooked. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
+
+Examples of VALID inputs: "pad thai", "chicken parmesan", "sourdough bread", "chocolate lava cake", "miso soup", "beef wellington", "scrambled eggs"
+Examples of INVALID inputs: "box of nails", "asdfgh", "my homework", "a car", "hello world", "the color blue"
+
+Be generous — if it could reasonably be a food or dish from any cuisine, it's valid. Misspellings are fine.`,
+        `Is this a valid food/dish to make a recipe for? "${input.dish}"`,
+        true // JSON mode
+      );
+
+      try {
+        const validation = JSON.parse(validationResult);
+        if (!validation.valid) {
+          await sendSSE(writer, encoder, "error", {
+            message: validation.reason || `"${input.dish}" doesn't appear to be a real food or dish. Please enter a valid recipe name.`,
+          });
+          await writer.close();
+          return;
+        }
+      } catch {
+        // If validation parsing fails, proceed anyway
+      }
+
+      await sendSSE(writer, encoder, "agent", {
+        agent: 0,
+        name: "Validating Input",
+        status: "complete",
+        summary: "Valid dish confirmed",
+      });
+
+      // Agent 1: Prompt Engineer (Gemini free)
+      await sendSSE(writer, encoder, "agent", {
+        agent: 1,
         name: "Prompt Engineer",
         status: "running",
       });
@@ -85,15 +125,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
 
       await sendSSE(writer, encoder, "agent", {
-        agent: 0,
+        agent: 1,
         name: "Prompt Engineer",
         status: "complete",
         summary: researchBrief.slice(0, 300) + "...",
       });
 
-      // Agent 1: Multi-Agent Research (5 parallel Claude Haiku agents with web search)
+      // Agent 2: Multi-Agent Research (parallel Claude Haiku agents with web search)
       await sendSSE(writer, encoder, "agent", {
-        agent: 1,
+        agent: 2,
         name: "Research Team",
         status: "running",
         detail: "Deploying 2 research agents in parallel...",
@@ -132,15 +172,15 @@ Research brief for context:\n${researchBrief}`,
       );
 
       await sendSSE(writer, encoder, "agent", {
-        agent: 1,
+        agent: 2,
         name: "Research Team",
         status: "complete",
         summary: `2 agents completed parallel research`,
       });
 
-      // Agent 2: Recipe Architect (Gemini free, JSON mode)
+      // Agent 3: Recipe Architect (Gemini free, JSON mode)
       await sendSSE(writer, encoder, "agent", {
-        agent: 2,
+        agent: 3,
         name: "Recipe Architect",
         status: "running",
       });
@@ -157,7 +197,7 @@ Research brief for context:\n${researchBrief}`,
       const slug = toSlug(recipeData.title);
 
       await sendSSE(writer, encoder, "agent", {
-        agent: 2,
+        agent: 3,
         name: "Recipe Architect",
         status: "complete",
       });

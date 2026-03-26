@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
 import GeneratorForm, { type GeneratorInput } from "./GeneratorForm";
 import GeneratorProgress from "./GeneratorProgress";
+import RecipePreview from "./RecipePreview";
 
-type State = "idle" | "generating" | "publishing" | "deploying" | "published";
+type State = "idle" | "generating" | "preview" | "publishing" | "deploying" | "published";
 
 interface AgentStatus {
   agent: number;
@@ -19,22 +20,24 @@ interface RecipeResult {
   preview: Record<string, unknown>;
 }
 
-const initialAgents: AgentStatus[] = [
-  { agent: 0, name: "Prompt Engineer", status: "pending" },
-  { agent: 1, name: "Research Agent", status: "pending" },
-  { agent: 2, name: "Recipe Architect", status: "pending" },
-  { agent: 3, name: "Publishing & Deploying", status: "pending" },
+const generationAgents: AgentStatus[] = [
+  { agent: 0, name: "Validating Input", status: "pending" },
+  { agent: 1, name: "Prompt Engineer", status: "pending" },
+  { agent: 2, name: "Research Team", status: "pending" },
+  { agent: 3, name: "Recipe Architect", status: "pending" },
 ];
 
 export default function RecipeGenerator() {
   const [state, setState] = useState<State>("idle");
-  const [agents, setAgents] = useState<AgentStatus[]>(initialAgents);
+  const [agents, setAgents] = useState<AgentStatus[]>(generationAgents);
   const [error, setError] = useState<string | null>(null);
   const [recipe, setRecipe] = useState<RecipeResult | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
 
   const pollUntilLive = useCallback(async (slug: string) => {
     const url = `/recipes/${slug}/`;
-    const maxAttempts = 30; // 30 * 5s = 2.5 min max
+    const maxAttempts = 30;
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       try {
@@ -50,79 +53,13 @@ export default function RecipeGenerator() {
     return false;
   }, []);
 
-  const autoPublish = useCallback(
-    async (recipeData: RecipeResult) => {
-      setState("publishing");
-
-      setAgents((prev) =>
-        prev.map((a) =>
-          a.agent === 3
-            ? { ...a, status: "running" as const, summary: "Committing to repository..." }
-            : a
-        )
-      );
-
-      try {
-        const res = await fetch("/api/publish-recipe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: recipeData.slug,
-            mdx: recipeData.mdx,
-            research: recipeData.research,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || `HTTP ${res.status}`);
-        }
-
-        setState("deploying");
-        setAgents((prev) =>
-          prev.map((a) =>
-            a.agent === 3
-              ? { ...a, summary: "Building & deploying — waiting for site to update..." }
-              : a
-          )
-        );
-
-        const isLive = await pollUntilLive(recipeData.slug);
-
-        if (isLive) {
-          setAgents((prev) =>
-            prev.map((a) =>
-              a.agent === 3
-                ? { ...a, status: "complete" as const, summary: "Recipe is live!" }
-                : a
-            )
-          );
-        } else {
-          setAgents((prev) =>
-            prev.map((a) =>
-              a.agent === 3
-                ? { ...a, status: "complete" as const, summary: "Published but deploy may still be in progress. Check back shortly." }
-                : a
-            )
-          );
-        }
-        setState("published");
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to publish";
-        setError(message);
-        setState("idle");
-      }
-    },
-    [pollUntilLive]
-  );
-
   const handleGenerate = useCallback(async (input: GeneratorInput) => {
     setState("generating");
     setError(null);
     setRecipe(null);
-    setAgents(initialAgents.map((a) => ({ ...a, status: "pending" })));
+    setPublishError(null);
+    setLastInput(input);
+    setAgents(generationAgents.map((a) => ({ ...a, status: "pending" })));
 
     let receivedRecipe: RecipeResult | null = null;
 
@@ -134,6 +71,7 @@ export default function RecipeGenerator() {
               a.agent === data.agent
                 ? {
                     ...a,
+                    name: (data.name as string) || a.name,
                     status: data.status as AgentStatus["status"],
                     summary: (data.summary as string) || a.summary,
                   }
@@ -166,7 +104,14 @@ export default function RecipeGenerator() {
 
       if (!res.ok || !res.body) {
         const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+        // Try to parse as JSON for structured errors
+        try {
+          const errData = JSON.parse(text);
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        } catch (e) {
+          if (e instanceof Error && e.message !== text) throw e;
+          throw new Error(text || `HTTP ${res.status}`);
+        }
       }
 
       const reader = res.body.getReader();
@@ -206,9 +151,9 @@ export default function RecipeGenerator() {
         }
       }
 
-      // Auto-publish after successful generation
+      // Show preview after generation
       if (receivedRecipe) {
-        await autoPublish(receivedRecipe);
+        setState("preview");
       }
     } catch (err) {
       const message =
@@ -216,13 +161,79 @@ export default function RecipeGenerator() {
       setError(message);
       setState("idle");
     }
-  }, [autoPublish]);
+  }, []);
+
+  const handlePublish = useCallback(async () => {
+    if (!recipe) return;
+    setState("publishing");
+    setPublishError(null);
+
+    setAgents([
+      ...generationAgents.map((a) => ({ ...a, status: "complete" as const })),
+      { agent: 4, name: "Publishing & Deploying", status: "running" as const, summary: "Committing to repository..." },
+    ]);
+
+    try {
+      const res = await fetch("/api/publish-recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: recipe.slug,
+          mdx: recipe.mdx,
+          research: recipe.research,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+
+      setState("deploying");
+      setAgents((prev) =>
+        prev.map((a) =>
+          a.agent === 4
+            ? { ...a, summary: "Building & deploying — waiting for site to update..." }
+            : a
+        )
+      );
+
+      const isLive = await pollUntilLive(recipe.slug);
+
+      setAgents((prev) =>
+        prev.map((a) =>
+          a.agent === 4
+            ? {
+                ...a,
+                status: "complete" as const,
+                summary: isLive
+                  ? "Recipe is live!"
+                  : "Published but deploy may still be in progress.",
+              }
+            : a
+        )
+      );
+      setState("published");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to publish";
+      setPublishError(message);
+      setState("preview");
+    }
+  }, [recipe, pollUntilLive]);
 
   const handleRegenerate = () => {
     setState("idle");
     setRecipe(null);
     setError(null);
-    setAgents(initialAgents.map((a) => ({ ...a, status: "pending" })));
+    setPublishError(null);
+    setAgents(generationAgents.map((a) => ({ ...a, status: "pending" })));
+  };
+
+  const handleRegenerateWithFeedback = (feedback: string) => {
+    if (!lastInput) return;
+    handleGenerate({ ...lastInput, feedback });
   };
 
   return (
@@ -238,6 +249,21 @@ export default function RecipeGenerator() {
       {/* Progress — shown during generation, publishing, and deploying */}
       {(state === "generating" || state === "publishing" || state === "deploying") && (
         <GeneratorProgress agents={agents} error={error} />
+      )}
+
+      {/* Preview — shown after generation, before publish */}
+      {state === "preview" && recipe && (
+        <RecipePreview
+          preview={recipe.preview as any}
+          slug={recipe.slug}
+          mdx={recipe.mdx}
+          onPublish={handlePublish}
+          onRegenerate={handleRegenerate}
+          onRegenerateWithFeedback={handleRegenerateWithFeedback}
+          publishing={false}
+          published={false}
+          publishError={publishError}
+        />
       )}
 
       {/* Published — show success with link */}

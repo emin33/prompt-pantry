@@ -21,6 +21,7 @@ export interface GeneratorInput {
   dietary: string;
   servings: number;
   password: string;
+  feedback?: string;
 }
 
 interface Props {
