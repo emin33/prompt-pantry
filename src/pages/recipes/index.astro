@@ -15,14 +15,15 @@ const recipeData = recipes.map((r) => ({
   totalTime: r.data.totalTime,
   tags: r.data.tags,
   publishedDate: r.data.publishedDate,
+  image: r.data.image,
 }));
 ---
 
-<Layout title="Recipes" description="Browse all AI-researched recipes.">
+<Layout title="Recipes" description="Browse all recipes.">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
     <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-2">Recipes</h1>
     <p class="text-warm-gray mb-8">
-      Browse all recipes. Each one is researched, synthesized, and built to actually work.
+      Browse all recipes.
     </p>
     <RecipeFilter client:load recipes={recipeData} />
   </div>

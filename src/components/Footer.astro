@@ -3,12 +3,17 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="border-t border-warm-gray/15 mt-16 no-print">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-warm-gray">
-    <p>&copy; {year} Prompt Pantry</p>
-    <ul class="flex gap-6">
-      <li><a href="/recipes" class="hover:text-charcoal transition-colors">Recipes</a></li>
-      <li><a href="/techniques" class="hover:text-charcoal transition-colors">Techniques</a></li>
-      <li><a href="/about" class="hover:text-charcoal transition-colors">About</a></li>
-    </ul>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <img src="/images/logo.png" alt="Prompt Pantry" class="h-10 opacity-70" />
+      </div>
+      <ul class="flex gap-6 text-sm">
+        <li><a href="/recipes" class="text-muted hover:text-charcoal transition-colors no-underline">Recipes</a></li>
+        <li><a href="/techniques" class="text-muted hover:text-charcoal transition-colors no-underline">Techniques</a></li>
+        <li><a href="/about" class="text-muted hover:text-charcoal transition-colors no-underline">About</a></li>
+      </ul>
+    </div>
+    <p class="text-center text-xs text-muted mt-6">&copy; {year} Prompt Pantry</p>
   </div>
 </footer>

@@ -10,6 +10,7 @@ interface RecipeData {
   totalTime: number;
   tags: string[];
   publishedDate: string;
+  image?: string;
 }
 
 interface Props {
@@ -30,6 +31,44 @@ const difficultyLevels: Record<string, number> = {
   Medium: 2,
   Hard: 3,
   Project: 3,
+};
+
+const cuisineEmoji: Record<string, string> = {
+  Indian: "\u{1F1EE}\u{1F1F3}",
+  Japanese: "\u{1F1EF}\u{1F1F5}",
+  Italian: "\u{1F1EE}\u{1F1F9}",
+  French: "\u{1F1EB}\u{1F1F7}",
+  Mexican: "\u{1F1F2}\u{1F1FD}",
+  Thai: "\u{1F1F9}\u{1F1ED}",
+  Korean: "\u{1F1F0}\u{1F1F7}",
+  "Chinese-American": "\u{1F1FA}\u{1F1F8}",
+  American: "\u{1F1FA}\u{1F1F8}",
+};
+
+const categoryEmoji: Record<string, string> = {
+  Pasta: "\u{1F35D}",
+  Meat: "\u{1F969}",
+  Seafood: "\u{1F990}",
+  Vegetarian: "\u{1F96C}",
+  Soup: "\u{1F372}",
+  Dessert: "\u{1F370}",
+  Breakfast: "\u{1F373}",
+  Sides: "\u{1F957}",
+  Sauces: "\u{1F9C8}",
+  Bread: "\u{1F35E}",
+};
+
+const categoryColors: Record<string, string> = {
+  Pasta: "bg-golden-light",
+  Meat: "bg-terracotta/8",
+  Seafood: "bg-sage-light/50",
+  Vegetarian: "bg-sage-light",
+  Soup: "bg-golden-light/50",
+  Dessert: "bg-terracotta/5",
+  Breakfast: "bg-golden-light",
+  Sides: "bg-sage-light/30",
+  Sauces: "bg-terracotta/5",
+  Bread: "bg-golden-light/50",
 };
 
 export default function RecipeFilter({ recipes }: Props) {
@@ -158,59 +197,79 @@ export default function RecipeFilter({ recipes }: Props) {
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((r) => (
-            <a
-              key={r.slug}
-              href={`/recipes/${r.slug}`}
-              className="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden no-underline"
-            >
-              <div className="h-1.5 bg-golden-light border-b border-golden/20" />
-              <div className="p-5">
-                <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
-                  {r.title}
-                </h3>
-                <p className="text-sm text-warm-gray line-clamp-2 mb-4">
-                  {r.description}
-                </p>
-                <div className="flex items-center justify-between text-xs text-warm-gray">
-                  <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 rounded-full bg-terracotta/8 text-terracotta font-medium">
-                      {r.cuisine}
-                    </span>
-                    <span className="flex gap-0.5">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <svg
-                          key={i}
-                          className={`w-3 h-3 ${
-                            i < (difficultyLevels[r.difficulty] || 1)
-                              ? "text-golden"
-                              : "text-warm-gray/20"
-                          }`}
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12 2c-1 4-4 6-4 10a4 4 0 008 0c0-4-3-6-4-10z" />
-                        </svg>
-                      ))}
-                    </span>
+          {filtered.map((r) => {
+            const flames = difficultyLevels[r.difficulty] || 1;
+            const emoji = cuisineEmoji[r.cuisine] || "";
+            const heroEmoji = categoryEmoji[r.category] || "\u{1F37D}\u{FE0F}";
+            const accent = categoryColors[r.category] || "bg-cream";
+
+            return (
+              <a
+                key={r.slug}
+                href={`/recipes/${r.slug}`}
+                className="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden no-underline"
+              >
+                {/* Hero area */}
+                {r.image ? (
+                  <div className="aspect-[16/10] overflow-hidden">
+                    <img src={r.image} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12,6 12,12 16,14" />
-                    </svg>
-                    {r.totalTime} min
+                ) : (
+                  <div className={`${accent} flex items-center justify-center py-6`}>
+                    <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
+                  </div>
+                )}
+
+                <div className="p-5">
+                  <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
+                    {r.title}
+                  </h3>
+                  <p className="text-sm text-warm-gray line-clamp-2 mb-4 leading-relaxed">
+                    {r.description}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted">
+                    <div className="flex items-center gap-3">
+                      <span className="px-2 py-0.5 rounded-full bg-terracotta/8 text-terracotta font-medium">
+                        {emoji && <span className="mr-1">{emoji}</span>}{r.cuisine}
+                      </span>
+                      <span
+                        className="flex gap-0.5 cursor-help"
+                        title={`Difficulty: ${r.difficulty}`}
+                      >
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-3 h-3 ${
+                              i < flames
+                                ? "text-golden"
+                                : "text-warm-gray/20"
+                            }`}
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M12 2c-1 4-4 6-4 10a4 4 0 008 0c0-4-3-6-4-10z" />
+                          </svg>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                      </svg>
+                      {r.totalTime} min
+                    </div>
                   </div>
                 </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            );
+          })}
         </div>
       )}
     </div>

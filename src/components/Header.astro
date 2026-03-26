@@ -10,8 +10,8 @@ const navLinks = [
 
 <header class="border-b border-warm-gray/15 bg-cream/80 backdrop-blur-sm sticky top-0 z-50">
   <nav class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-    <a href="/" class="font-display text-2xl text-charcoal hover:text-terracotta transition-colors no-underline">
-      Prompt Pantry
+    <a href="/" class="no-underline">
+      <img src="/images/logo.png" alt="Prompt Pantry" class="h-14" />
     </a>
     <ul class="flex items-center gap-6 text-sm font-medium">
       {navLinks.map(({ href, label }) => (
@@ -22,7 +22,7 @@ const navLinks = [
               "no-underline transition-colors",
               currentPath.startsWith(href)
                 ? "text-terracotta"
-                : "text-warm-gray hover:text-charcoal",
+                : "text-muted hover:text-charcoal",
             ]}
           >
             {label}

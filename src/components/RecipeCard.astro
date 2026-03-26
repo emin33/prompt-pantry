@@ -7,9 +7,10 @@ interface Props {
   difficulty: string;
   totalTime: number;
   category: string;
+  image?: string;
 }
 
-const { title, slug, description, cuisine, difficulty, totalTime, category } = Astro.props;
+const { title, slug, description, cuisine, difficulty, totalTime, category, image } = Astro.props;
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -20,45 +21,81 @@ const difficultyLevels: Record<string, number> = {
 
 const flames = difficultyLevels[difficulty] || 1;
 
-// Category color accents
-const categoryColors: Record<string, string> = {
-  Pasta: "bg-golden-light border-golden/20",
-  Meat: "bg-terracotta/5 border-terracotta/15",
-  Seafood: "bg-sage-light/50 border-sage/20",
-  Vegetarian: "bg-sage-light border-sage/20",
-  Soup: "bg-golden-light/50 border-golden/15",
-  Dessert: "bg-terracotta/5 border-terracotta/10",
-  Breakfast: "bg-golden-light border-golden/20",
-  Sides: "bg-sage-light/30 border-sage/15",
-  Sauces: "bg-terracotta/5 border-terracotta/10",
-  Bread: "bg-golden-light/50 border-golden/15",
+// Cuisine emoji
+const cuisineEmoji: Record<string, string> = {
+  Indian: "\u{1F1EE}\u{1F1F3}",
+  Japanese: "\u{1F1EF}\u{1F1F5}",
+  Italian: "\u{1F1EE}\u{1F1F9}",
+  French: "\u{1F1EB}\u{1F1F7}",
+  Mexican: "\u{1F1F2}\u{1F1FD}",
+  Thai: "\u{1F1F9}\u{1F1ED}",
+  Korean: "\u{1F1F0}\u{1F1F7}",
+  "Chinese-American": "\u{1F1FA}\u{1F1F8}",
+  American: "\u{1F1FA}\u{1F1F8}",
 };
 
-const accent = categoryColors[category] || "bg-cream border-warm-gray/15";
+// Category emoji for hero area
+const categoryEmoji: Record<string, string> = {
+  Pasta: "\u{1F35D}",
+  Meat: "\u{1F969}",
+  Seafood: "\u{1F990}",
+  Vegetarian: "\u{1F96C}",
+  Soup: "\u{1F372}",
+  Dessert: "\u{1F370}",
+  Breakfast: "\u{1F373}",
+  Sides: "\u{1F957}",
+  Sauces: "\u{1F9C8}",
+  Bread: "\u{1F35E}",
+};
+
+const emoji = cuisineEmoji[cuisine] || "";
+const heroEmoji = categoryEmoji[category] || "\u{1F37D}\u{FE0F}";
+
+// Category color accents
+const categoryColors: Record<string, string> = {
+  Pasta: "bg-golden-light",
+  Meat: "bg-terracotta/8",
+  Seafood: "bg-sage-light/50",
+  Vegetarian: "bg-sage-light",
+  Soup: "bg-golden-light/50",
+  Dessert: "bg-terracotta/5",
+  Breakfast: "bg-golden-light",
+  Sides: "bg-sage-light/30",
+  Sauces: "bg-terracotta/5",
+  Bread: "bg-golden-light/50",
+};
+
+const accent = categoryColors[category] || "bg-cream";
 ---
 
 <a
   href={`/recipes/${slug}`}
-  class="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden no-underline"
+  class="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden no-underline"
 >
-  {/* Color accent strip */}
-  <div class={`h-1.5 ${accent}`} />
+  {/* Hero area */}
+  {image ? (
+    <div class="aspect-[16/10] overflow-hidden">
+      <img src={image} alt={title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+    </div>
+  ) : (
+    <div class={`${accent} flex items-center justify-center py-6`}>
+      <span class="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
+    </div>
+  )}
 
   <div class="p-5">
-    <div class="flex items-start justify-between gap-2 mb-2">
-      <h3 class="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug">
-        {title}
-      </h3>
-    </div>
+    <h3 class="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
+      {title}
+    </h3>
 
-    <p class="text-sm text-warm-gray line-clamp-2 mb-4">{description}</p>
+    <p class="text-sm text-warm-gray line-clamp-2 mb-4 leading-relaxed">{description}</p>
 
-    <div class="flex items-center justify-between text-xs text-warm-gray">
+    <div class="flex items-center justify-between text-xs text-muted">
       <div class="flex items-center gap-3">
         <span class="px-2 py-0.5 rounded-full bg-terracotta/8 text-terracotta font-medium">
-          {cuisine}
+          {emoji && <span class="mr-1">{emoji}</span>}{cuisine}
         </span>
-        <span class="flex gap-0.5">
+        <span class="flex gap-0.5 cursor-help" title={`Difficulty: ${difficulty}`}>
           {Array.from({ length: 3 }).map((_, i) => (
             <svg
               class={`w-3 h-3 ${i < flames ? "text-golden" : "text-warm-gray/20"}`}

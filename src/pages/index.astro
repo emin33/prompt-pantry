@@ -16,14 +16,9 @@ const recent = sorted.slice(1, 7);
 
 <Layout title="Prompt Pantry">
   {/* Hero */}
-  <section class="max-w-5xl mx-auto px-4 sm:px-6 pt-16 pb-12 text-center">
-    <h1 class="font-display text-5xl md:text-6xl text-charcoal mb-4">
-      Prompt Pantry
-    </h1>
-    <p class="text-xl text-warm-gray max-w-xl mx-auto mb-8">
-      AI-researched recipes for real kitchens.
-    </p>
-    <div class="w-16 h-0.5 bg-terracotta/40 mx-auto" />
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-8 text-center">
+    <img src="/images/logo.png" alt="Prompt Pantry" class="h-32 md:h-44 mx-auto mb-2" />
+    <p class="text-lg text-warm-gray italic font-light">Yummy! Yummy!</p>
   </section>
 
   {/* Featured recipe */}
@@ -33,7 +28,7 @@ const recent = sorted.slice(1, 7);
         href={`/recipes/${featured.data.slug}`}
         class="group block bg-warm-white rounded-2xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden no-underline"
       >
-        <div class="h-2 bg-gradient-to-r from-terracotta via-golden to-sage" />
+        <div class="h-2" style="background: linear-gradient(135deg, #C75B3F 50%, #7A9E7E 50%);" />
         <div class="p-8">
           <span class="text-xs font-medium text-terracotta tracking-wide uppercase mb-3 block">
             Featured Recipe
@@ -44,7 +39,7 @@ const recent = sorted.slice(1, 7);
           <p class="text-warm-gray mb-4 max-w-xl">
             {featured.data.description}
           </p>
-          <div class="flex items-center gap-4 text-sm text-warm-gray">
+          <div class="flex items-center gap-4 text-sm text-muted">
             <span class="px-2.5 py-1 rounded-full bg-terracotta/8 text-terracotta font-medium">
               {featured.data.cuisine}
             </span>
@@ -78,6 +73,7 @@ const recent = sorted.slice(1, 7);
             difficulty={r.data.difficulty}
             totalTime={r.data.totalTime}
             category={r.data.category}
+            image={r.data.image}
           />
         ))}
       </div>
@@ -85,18 +81,21 @@ const recent = sorted.slice(1, 7);
   )}
 
   {/* What is this */}
-  <section class="max-w-xl mx-auto px-4 sm:px-6 mb-16 text-center">
-    <h2 class="font-display text-2xl text-charcoal mb-3">What is this?</h2>
-    <p class="text-warm-gray mb-4">
-      Every recipe here is built from deep research — techniques, ratios, and
-      methods sourced from renowned chefs and culinary traditions, then
-      synthesized into something original and practical.
-    </p>
-    <a
-      href="/about"
-      class="text-sm font-medium text-terracotta hover:text-terracotta-dark transition-colors"
-    >
-      Learn more about the project &rarr;
-    </a>
+  <section class="bg-warm-white border-y border-warm-gray/10 py-14 mb-16">
+    <div class="max-w-xl mx-auto px-4 sm:px-6 text-center">
+      <span class="text-4xl mb-3 block">&#x1F468;&#x200D;&#x1F373;</span>
+      <h2 class="font-display text-2xl text-charcoal mb-3">What is this?</h2>
+      <p class="text-warm-gray mb-5 leading-relaxed">
+        Every recipe here is built from techniques, ratios, and methods sourced
+        from renowned chefs and culinary traditions, then synthesized into
+        something original and practical.
+      </p>
+      <a
+        href="/about"
+        class="inline-block px-5 py-2.5 rounded-lg bg-terracotta text-warm-white text-sm font-medium hover:bg-terracotta-dark transition-colors no-underline"
+      >
+        Learn more about the project &rarr;
+      </a>
+    </div>
   </section>
 </Layout>

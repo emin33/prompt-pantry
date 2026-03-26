@@ -9,9 +9,10 @@ interface Props {
   cookTime: number;
   totalTime: number;
   equipment?: string[];
+  image?: string;
 }
 
-const { title, description, cuisine, category, difficulty, prepTime, cookTime, totalTime, equipment } = Astro.props;
+const { title, description, cuisine, category, difficulty, prepTime, cookTime, totalTime, equipment, image } = Astro.props;
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -24,6 +25,13 @@ const flames = difficultyLevels[difficulty] || 1;
 ---
 
 <div class="mb-8">
+  {/* Hero image */}
+  {image && (
+    <div class="rounded-xl overflow-hidden mb-6 aspect-[16/9]">
+      <img src={image} alt={title} class="w-full h-full object-cover" />
+    </div>
+  )}
+
   {/* Badges */}
   <div class="flex flex-wrap gap-2 mb-4">
     <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-terracotta/10 text-terracotta">
@@ -40,7 +48,7 @@ const flames = difficultyLevels[difficulty] || 1;
   {/* Meta bar */}
   <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-warm-gray">
     {/* Difficulty */}
-    <div class="flex items-center gap-1.5" title={difficulty}>
+    <div class="flex items-center gap-1.5 cursor-help" title={`Difficulty: ${difficulty}`}>
       <span class="flex gap-0.5">
         {Array.from({ length: 3 }).map((_, i) => (
           <svg
