@@ -20,6 +20,7 @@ export interface GeneratorInput {
   cookware: string[];
   dietary: string;
   servings: number;
+  password: string;
 }
 
 interface Props {
@@ -33,6 +34,7 @@ export default function GeneratorForm({ onSubmit, disabled }: Props) {
   const [cookware, setCookware] = useState<string[]>([...DEFAULT_COOKWARE]);
   const [dietary, setDietary] = useState("");
   const [servings, setServings] = useState(4);
+  const [password, setPassword] = useState("");
   const [showCookware, setShowCookware] = useState(false);
 
   const toggleCookware = (item: string) => {
@@ -43,8 +45,8 @@ export default function GeneratorForm({ onSubmit, disabled }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dish.trim()) return;
-    onSubmit({ dish: dish.trim(), difficulty, cookware, dietary, servings });
+    if (!dish.trim() || !password) return;
+    onSubmit({ dish: dish.trim(), difficulty, cookware, dietary, servings, password });
   };
 
   return (
@@ -200,10 +202,26 @@ export default function GeneratorForm({ onSubmit, disabled }: Props) {
         />
       </div>
 
+      {/* Access Code */}
+      <div>
+        <label className="block text-sm font-semibold text-charcoal mb-2">
+          Access Code
+        </label>
+        <input
+          type="text"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter access code to generate"
+          className="w-full px-4 py-3 rounded-lg border border-warm-gray/20 bg-warm-white text-charcoal placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-terracotta/30 focus:border-terracotta text-base"
+          disabled={disabled}
+          required
+        />
+      </div>
+
       {/* Submit */}
       <button
         type="submit"
-        disabled={disabled || !dish.trim()}
+        disabled={disabled || !dish.trim() || !password}
         className="w-full px-6 py-3 rounded-lg bg-terracotta text-white font-semibold text-base hover:bg-terracotta-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {disabled ? "Generating..." : "Generate Recipe"}

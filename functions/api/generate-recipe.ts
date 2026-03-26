@@ -14,6 +14,7 @@ import { toSlug } from "../../src/lib/slug";
 interface Env {
   GEMINI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
+  PUBLISH_PASSWORD: string;
 }
 
 interface GenerateRequest {
@@ -22,6 +23,7 @@ interface GenerateRequest {
   cookware: string[];
   dietary: string;
   servings: number;
+  password: string;
 }
 
 function sendSSE(
@@ -45,6 +47,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Validate password
+  if (!input.password || input.password !== env.PUBLISH_PASSWORD) {
+    return new Response(
+      JSON.stringify({ error: "Invalid access code" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   if (!input.dish || input.dish.trim().length < 2) {

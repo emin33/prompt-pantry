@@ -1,14 +1,12 @@
 interface Env {
   GITHUB_TOKEN: string;
   DEPLOY_HOOK_URL: string;
-  PUBLISH_PASSWORD: string;
 }
 
 interface PublishRequest {
   slug: string;
   mdx: string;
   research?: string;
-  password: string;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -19,11 +17,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     input = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  // Validate password
-  if (!input.password || input.password !== env.PUBLISH_PASSWORD) {
-    return Response.json({ error: "Invalid password" }, { status: 403 });
   }
 
   // Validate slug

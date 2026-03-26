@@ -45,7 +45,7 @@ interface Props {
   preview: PreviewData;
   slug: string;
   mdx: string;
-  onPublish: (password: string) => void;
+  onPublish: () => void;
   onRegenerate: () => void;
   publishing: boolean;
   published: boolean;
@@ -82,7 +82,6 @@ export default function RecipePreview({
   published,
   publishError,
 }: Props) {
-  const [password, setPassword] = useState("");
   const [showMdx, setShowMdx] = useState(false);
 
   return (
@@ -235,19 +234,11 @@ export default function RecipePreview({
         ) : (
           <>
             <div className="flex gap-3">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Publish password"
-                className="flex-1 px-4 py-2.5 rounded-lg border border-warm-gray/20 bg-warm-white text-charcoal placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-sage/30 focus:border-sage text-sm"
-                disabled={publishing}
-              />
               <button
                 type="button"
-                onClick={() => onPublish(password)}
-                disabled={publishing || !password}
-                className="px-6 py-2.5 rounded-lg bg-sage text-white font-semibold text-sm hover:bg-sage-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => onPublish()}
+                disabled={publishing}
+                className="flex-1 px-6 py-2.5 rounded-lg bg-sage text-white font-semibold text-sm hover:bg-sage-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {publishing ? "Publishing..." : "Publish to Site"}
               </button>
