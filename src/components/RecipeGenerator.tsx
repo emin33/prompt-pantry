@@ -101,7 +101,7 @@ export default function RecipeGenerator() {
     try {
       const res = await fetch("/api/generate-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-API-Secret": input.password },
         body: JSON.stringify(input),
       });
 
@@ -179,12 +179,11 @@ export default function RecipeGenerator() {
     try {
       const res = await fetch("/api/publish-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-API-Secret": lastInput?.password || "" },
         body: JSON.stringify({
           slug: recipe.slug,
           mdx: recipe.mdx,
           research: recipe.research,
-          password: lastInput?.password,
         }),
       });
 

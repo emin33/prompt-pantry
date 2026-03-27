@@ -38,8 +38,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // Authenticate
-  if (!input.password || !timingSafeEqual(input.password, env.PUBLISH_PASSWORD)) {
+  // Authenticate via header
+  const pagePassword = request.headers.get("X-API-Secret");
+  if (!pagePassword || !timingSafeEqual(pagePassword, env.PUBLISH_PASSWORD)) {
     return Response.json({ error: "Unauthorized" }, {
       status: 403,
       headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
@@ -160,7 +161,7 @@ export const onRequestOptions: PagesFunction = async () => {
     headers: {
       "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-API-Secret",
     },
   });
 };
