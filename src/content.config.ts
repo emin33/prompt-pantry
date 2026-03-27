@@ -20,7 +20,7 @@ const recipes = defineCollection({
     description: z.string(),
     cuisine: z.string(),
     category: z.enum([
-      "Pasta",
+      "Noodles",
       "Meat",
       "Seafood",
       "Vegetarian",
@@ -62,7 +62,7 @@ const techniques = defineCollection({
       "Sauce Work",
       "Baking",
       "Meat",
-      "Pasta",
+      "Noodles",
     ]),
     difficulty: z.enum(["Easy", "Medium", "Hard"]),
     relatedTechniques: z.array(z.string()).optional().default([]),

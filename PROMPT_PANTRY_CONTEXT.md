@@ -88,7 +88,7 @@ title: "Catastrophically Good Carbonara"
 slug: "catastrophically-good-carbonara"
 description: "A silky, peppery Roman classic built on egg yolks, guanciale, and Pecorino — no cream allowed."
 cuisine: "Italian"
-category: "Pasta"           # Pasta, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread
+category: "Noodles"         # Noodles, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread
 difficulty: "Medium"        # Easy, Medium, Hard, Project
 prepTime: 15                # minutes
 cookTime: 20                # minutes
@@ -205,7 +205,7 @@ Pecorino. Carbonara waits for nobody.
 title: "Tempering Eggs"
 slug: "tempering-eggs"
 description: "How to incorporate eggs into hot mixtures without scrambling them."
-category: "Fundamentals"    # Fundamentals, Heat Control, Knife Skills, Sauce Work, Baking, Meat, Pasta
+category: "Fundamentals"    # Fundamentals, Heat Control, Knife Skills, Sauce Work, Baking, Meat, Noodles
 difficulty: "Easy"
 relatedTechniques: ["emulsification", "custard-making"]
 usedInRecipes: []           # Auto-populated at build time by cross-referencing recipe frontmatter

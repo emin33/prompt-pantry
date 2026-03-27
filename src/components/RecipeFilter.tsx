@@ -47,7 +47,7 @@ const cuisineEmoji: Record<string, string> = {
 };
 
 const categoryEmoji: Record<string, string> = {
-  Pasta: "\u{1F35D}",
+  Noodles: "\u{1F35D}",
   Meat: "\u{1F969}",
   Seafood: "\u{1F990}",
   Vegetarian: "\u{1F96C}",
@@ -60,7 +60,7 @@ const categoryEmoji: Record<string, string> = {
 };
 
 const categoryColors: Record<string, string> = {
-  Pasta: "bg-golden-light",
+  Noodles: "bg-golden-light",
   Meat: "bg-terracotta/8",
   Seafood: "bg-sage-light/50",
   Vegetarian: "bg-sage-light",

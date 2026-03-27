@@ -7,7 +7,7 @@ The JSON schema:
   "title": "string — the dish name, concise and natural. Use just the dish name (e.g. 'Pad Thai', 'Butter Chicken') with a short descriptor ONLY if it's a specific variant (e.g. 'Smoked Brisket', 'Spicy Miso Ramen'). NEVER use colons, subtitles, 'Mastering', 'Ultimate', 'Edition', or novel-style titles.",
   "description": "string — 1-2 sentence hook, no generic phrases",
   "cuisine": "string — e.g. Indian, Japanese, Italian, Thai, Mexican, American, etc.",
-  "category": "MUST be exactly one of: Pasta, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread",
+  "category": "MUST be exactly one of: Noodles, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread",
   "prepTime": "number — minutes of active prep",
   "cookTime": "number — minutes of cooking",
   "restTime": "number — minutes of resting (0 if none)",
@@ -58,7 +58,7 @@ Guidelines for the recipe content:
 - Category guidance — READ CAREFULLY and follow exactly:
   * "Meat" = beef, pork, lamb, chicken, turkey, duck, or other poultry/game as the primary protein
   * "Seafood" = shrimp, fish, crab, lobster, scallops, or other seafood as the primary protein
-  * "Pasta" = ONLY Italian-style pasta dishes (spaghetti, fettuccine, lasagna, etc.)
+  * "Noodles" = ONLY Italian-style pasta dishes (spaghetti, fettuccine, lasagna, etc.)
   * "Vegetarian" = no meat or seafood
   * Noodle stir-fries with shrimp = "Seafood". Noodle stir-fries with chicken = "Meat". Noodle soups = "Soup".
   * If a dish has BOTH meat and seafood, use whichever is the star protein.`;

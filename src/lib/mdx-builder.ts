@@ -41,7 +41,7 @@ export interface RecipeJSON {
 }
 
 const VALID_CATEGORIES = [
-  "Pasta",
+  "Noodles",
   "Meat",
   "Seafood",
   "Vegetarian",
