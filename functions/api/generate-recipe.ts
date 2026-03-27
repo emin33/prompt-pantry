@@ -128,7 +128,7 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         agent: 1,
         name: "Prompt Engineer",
         status: "complete",
-        summary: researchBrief.slice(0, 300) + "...",
+        summary: "Research brief prepared",
       });
 
       // Agent 2: Multi-Agent Research (parallel Claude Haiku agents with web search)
