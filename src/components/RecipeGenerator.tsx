@@ -90,7 +90,7 @@ export default function RecipeGenerator() {
 
         case "error":
           setError(data.message as string);
-          setState("idle");
+          // Stay on generating view so user can see the error alongside progress
           break;
 
         case "done":
@@ -162,7 +162,7 @@ export default function RecipeGenerator() {
       const message =
         err instanceof Error ? err.message : "Unknown error occurred";
       setError(message);
-      setState("idle");
+      // Stay on generating view so user can see the error
     }
   }, []);
 
@@ -252,7 +252,7 @@ export default function RecipeGenerator() {
 
       {/* Progress — shown during generation, publishing, and deploying */}
       {(state === "generating" || state === "publishing" || state === "deploying") && (
-        <GeneratorProgress agents={agents} error={error} />
+        <GeneratorProgress agents={agents} error={error} onRetry={handleRegenerate} />
       )}
 
       {/* Preview — shown after generation, before publish */}

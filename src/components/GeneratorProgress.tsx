@@ -8,6 +8,7 @@ interface AgentStatus {
 interface Props {
   agents: AgentStatus[];
   error: string | null;
+  onRetry?: () => void;
 }
 
 const agentDescriptions: Record<number, string> = {
@@ -18,7 +19,7 @@ const agentDescriptions: Record<number, string> = {
   4: "Committing and deploying to the site...",
 };
 
-export default function GeneratorProgress({ agents, error }: Props) {
+export default function GeneratorProgress({ agents, error, onRetry }: Props) {
   return (
     <div className="space-y-4">
       <h3 className="font-display text-xl text-charcoal">
@@ -87,7 +88,15 @@ export default function GeneratorProgress({ agents, error }: Props) {
 
       {error && (
         <div className="p-4 rounded-lg border border-red-300 bg-red-50 text-red-800 text-sm">
-          <strong>Error:</strong> {error}
+          <p><strong>Error:</strong> {error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="mt-3 px-4 py-2 rounded-lg bg-terracotta text-warm-white text-sm font-medium hover:bg-terracotta/90 transition-colors"
+            >
+              Try Again
+            </button>
+          )}
         </div>
       )}
     </div>
