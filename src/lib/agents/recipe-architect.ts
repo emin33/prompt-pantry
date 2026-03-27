@@ -58,9 +58,9 @@ Guidelines for the recipe content:
 - Category guidance — READ CAREFULLY and follow exactly:
   * "Meat" = beef, pork, lamb, chicken, turkey, duck, or other poultry/game as the primary protein
   * "Seafood" = shrimp, fish, crab, lobster, scallops, or other seafood as the primary protein
-  * "Noodles" = ONLY Italian-style pasta dishes (spaghetti, fettuccine, lasagna, etc.)
+  * "Noodles" = any dish where noodles or pasta are the star (Pad Thai, ramen, pho, lo mein, spaghetti, fettuccine, lasagna, etc.)
   * "Vegetarian" = no meat or seafood
-  * Noodle stir-fries with shrimp = "Seafood". Noodle stir-fries with chicken = "Meat". Noodle soups = "Soup".
+  * If a dish has noodles AND a strong protein component, use "Noodles" if the noodles are the star, or the protein category if the protein is the star.
   * If a dish has BOTH meat and seafood, use whichever is the star protein.`;
 
 export function buildRecipeArchitectMessage(
