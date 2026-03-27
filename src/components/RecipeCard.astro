@@ -8,9 +8,11 @@ interface Props {
   totalTime: number;
   category: string;
   image?: string;
+  source?: string;
 }
 
-const { title, slug, description, cuisine, difficulty, totalTime, category, image } = Astro.props;
+const { title, slug, description, cuisine, difficulty, totalTime, category, image, source } = Astro.props;
+const isCommunity = source === "community";
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -36,7 +38,7 @@ const cuisineEmoji: Record<string, string> = {
 
 // Category emoji for hero area
 const categoryEmoji: Record<string, string> = {
-  Pasta: "\u{1F35D}",
+  Noodles: "\u{1F35D}",
   Meat: "\u{1F969}",
   Seafood: "\u{1F990}",
   Vegetarian: "\u{1F96C}",
@@ -53,7 +55,7 @@ const heroEmoji = categoryEmoji[category] || "\u{1F37D}\u{FE0F}";
 
 // Category color accents
 const categoryColors: Record<string, string> = {
-  Pasta: "bg-golden-light",
+  Noodles: "bg-golden-light",
   Meat: "bg-terracotta/8",
   Seafood: "bg-sage-light/50",
   Vegetarian: "bg-sage-light",
@@ -73,15 +75,24 @@ const accent = categoryColors[category] || "bg-cream";
   class="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden no-underline"
 >
   {/* Hero area */}
-  {image ? (
-    <div class="aspect-[16/10] overflow-hidden">
-      <img src={image} alt={title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-    </div>
-  ) : (
-    <div class={`${accent} flex items-center justify-center py-6`}>
-      <span class="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
-    </div>
-  )}
+  <div class="relative">
+    {image ? (
+      <div class="aspect-[16/10] overflow-hidden">
+        <img src={image} alt={title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      </div>
+    ) : (
+      <div class={`${accent} flex items-center justify-center py-6`}>
+        <span class="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
+      </div>
+    )}
+    {isCommunity && (
+      <div class="absolute top-0 left-0 overflow-hidden w-20 h-20 pointer-events-none">
+        <div class="absolute top-[10px] left-[-20px] w-[100px] text-center rotate-[-45deg] bg-sage text-warm-white text-[9px] font-bold uppercase tracking-wider py-[3px] shadow-sm">
+          Community
+        </div>
+      </div>
+    )}
+  </div>
 
   <div class="p-5">
     <h3 class="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
