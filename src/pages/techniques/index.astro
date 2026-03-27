@@ -32,7 +32,7 @@ const categoryOrder = [
     <p class="text-warm-gray mb-4">
       The building blocks behind every recipe. Learn a technique once, use it everywhere.
     </p>
-    <div class="w-24 h-0.5 bg-sage mb-10"></div>
+
 
     {categoryOrder
       .filter((cat) => grouped[cat])
@@ -47,20 +47,27 @@ const categoryOrder = [
               .map((t) => (
                 <a
                   href={`/techniques/${t.data.slug}`}
-                  class="technique-card group block p-5 rounded-xl bg-warm-white border border-warm-gray/10 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 no-underline"
+                  class="technique-card group block rounded-xl bg-warm-white border border-warm-gray/10 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 no-underline"
                 >
-                  <div>
-                    <div>
-                      <span class="font-medium text-charcoal group-hover:text-sage-dark transition-colors">
-                        {t.data.title}
-                      </span>
-                      <span class="block text-sm text-warm-gray mt-1 leading-relaxed">
-                        {t.data.description}
-                      </span>
-                      <span class="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium bg-golden-light text-golden">
-                        {t.data.difficulty}
-                      </span>
+                  {t.data.image && (
+                    <div class="aspect-[16/9] overflow-hidden rounded-t-xl">
+                      <img
+                        src={t.data.image}
+                        alt={t.data.title}
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
+                  )}
+                  <div class="p-5">
+                    <span class="font-medium text-charcoal group-hover:text-terracotta transition-colors">
+                      {t.data.title}
+                    </span>
+                    <span class="block text-sm text-warm-gray mt-1 leading-relaxed">
+                      {t.data.description}
+                    </span>
+                    <span class="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium bg-golden-light text-golden">
+                      {t.data.difficulty}
+                    </span>
                   </div>
                 </a>
               ))}
@@ -83,7 +90,7 @@ const categoryOrder = [
     top: 0;
     bottom: 0;
     width: 3px;
-    background: #C75B3F;
+    background: #7A9E7E;
     border-radius: 3px 0 0 3px;
   }
 </style>
