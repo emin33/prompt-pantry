@@ -224,27 +224,31 @@ export default function RecipeFilter({ recipes }: Props) {
                 className="group block bg-warm-white rounded-xl border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden no-underline"
               >
                 {/* Hero area */}
-                {r.image ? (
-                  <div className="aspect-[16/10] overflow-hidden">
-                    <img src={r.image} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-                ) : (
-                  <div className={`${accent} flex items-center justify-center py-6`}>
-                    <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
-                  </div>
-                )}
+                <div className="relative">
+                  {r.image ? (
+                    <div className="aspect-[16/10] overflow-hidden">
+                      <img src={r.image} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  ) : (
+                    <div className={`${accent} flex items-center justify-center py-6`}>
+                      <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
+                    </div>
+                  )}
+                  {r.source === "community" && (
+                    <div className="absolute top-0 left-0 pointer-events-none">
+                      <div className="bg-sage text-warm-white text-[9px] font-bold uppercase tracking-wider pl-2.5 pr-5 py-0.5 shadow-sm"
+                        style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%)" }}
+                      >
+                        Community
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div className="p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug flex-1">
-                      {r.title}
-                    </h3>
-                    {r.source === "community" && (
-                      <span className="px-2 py-0.5 rounded-full bg-sage-light text-sage-dark text-[10px] font-semibold uppercase tracking-wide flex-shrink-0">
-                        Community
-                      </span>
-                    )}
-                  </div>
+                  <h3 className="font-display text-xl text-charcoal group-hover:text-terracotta transition-colors leading-snug mb-2">
+                    {r.title}
+                  </h3>
                   <p className="text-sm text-warm-gray line-clamp-2 mb-4 leading-relaxed">
                     {r.description}
                   </p>

@@ -9,10 +9,11 @@ interface Props {
   category: string;
   image?: string;
   source?: string;
+  hideBadge?: boolean;
 }
 
-const { title, slug, description, cuisine, difficulty, totalTime, category, image, source } = Astro.props;
-const isCommunity = source === "community";
+const { title, slug, description, cuisine, difficulty, totalTime, category, image, source, hideBadge } = Astro.props;
+const isCommunity = source === "community" && !hideBadge;
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -86,8 +87,10 @@ const accent = categoryColors[category] || "bg-cream";
       </div>
     )}
     {isCommunity && (
-      <div class="absolute top-0 left-0 overflow-hidden w-20 h-20 pointer-events-none">
-        <div class="absolute top-[10px] left-[-20px] w-[100px] text-center rotate-[-45deg] bg-sage text-warm-white text-[9px] font-bold uppercase tracking-wider py-[3px] shadow-sm">
+      <div class="absolute top-0 left-0 pointer-events-none">
+        <div class="relative bg-sage text-warm-white text-[9px] font-bold uppercase tracking-wider pl-2.5 pr-5 py-0.5 shadow-sm"
+          style="clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);"
+        >
           Community
         </div>
       </div>
