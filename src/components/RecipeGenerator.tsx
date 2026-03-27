@@ -34,6 +34,7 @@ export default function RecipeGenerator() {
   const [recipe, setRecipe] = useState<RecipeResult | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
+  const [jwtToken, setJwtToken] = useState<string | null>(null);
 
   const pollUntilLive = useCallback(async (slug: string, title: string) => {
     const url = `/recipes/${slug}/`;
@@ -99,9 +100,26 @@ export default function RecipeGenerator() {
     };
 
     try {
+      // Get JWT token if we don't have one
+      let token = jwtToken;
+      if (!token) {
+        const authRes = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: input.password }),
+        });
+        if (!authRes.ok) {
+          const authErr = await authRes.json().catch(() => ({ error: "Authentication failed" }));
+          throw new Error((authErr as { error: string }).error || "Invalid access code");
+        }
+        const authData = await authRes.json() as { token: string };
+        token = authData.token;
+        setJwtToken(token);
+      }
+
       const res = await fetch("/api/generate-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Secret": input.password },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(input),
       });
 
@@ -179,7 +197,7 @@ export default function RecipeGenerator() {
     try {
       const res = await fetch("/api/publish-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Secret": lastInput?.password || "" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwtToken}` },
         body: JSON.stringify({
           slug: recipe.slug,
           mdx: recipe.mdx,

@@ -1,26 +1,15 @@
+import { verifyJWT } from "../lib/jwt";
+
 interface Env {
   GITHUB_TOKEN: string;
   DEPLOY_HOOK_URL: string;
-  PUBLISH_PASSWORD: string;
+  JWT_SECRET: string;
 }
 
 interface PublishRequest {
   slug: string;
   mdx: string;
   research?: string;
-  password: string;
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
-  }
-  return result === 0;
 }
 
 const ALLOWED_ORIGIN = "https://promptpantry.org";
@@ -38,10 +27,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // Authenticate via header
-  const pagePassword = request.headers.get("X-API-Secret");
-  if (!pagePassword || !timingSafeEqual(pagePassword, env.PUBLISH_PASSWORD)) {
-    return Response.json({ error: "Unauthorized" }, {
+  // Authenticate via JWT
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) {
+    return Response.json({ error: "Missing authentication token" }, {
+      status: 401,
+      headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
+    });
+  }
+  const jwtResult = await verifyJWT(token, env.JWT_SECRET);
+  if (!jwtResult.valid) {
+    return Response.json({ error: jwtResult.error }, {
       status: 403,
       headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
     });
@@ -161,7 +158,7 @@ export const onRequestOptions: PagesFunction = async () => {
     headers: {
       "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Secret",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 };

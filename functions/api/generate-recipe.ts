@@ -1,5 +1,6 @@
 import { callGemini } from "../../src/lib/gemini";
 import { callClaudeMultiAgentResearch } from "../../src/lib/claude";
+import { verifyJWT } from "../lib/jwt";
 import {
   PROMPT_ENGINEER_SYSTEM,
   buildPromptEngineerMessage,
@@ -14,7 +15,7 @@ import { toSlug } from "../../src/lib/slug";
 interface Env {
   GEMINI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
-  PUBLISH_PASSWORD: string;
+  JWT_SECRET: string;
 }
 
 interface GenerateRequest {
@@ -27,6 +28,7 @@ interface GenerateRequest {
   feedback?: string;
 }
 
+// timingSafeEqual kept for rate limit abuse detection
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   const encoder = new TextEncoder();
@@ -125,11 +127,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     );
   }
 
-  // Validate page password (sent via header)
-  const pagePassword = request.headers.get("X-API-Secret");
-  if (!pagePassword || !timingSafeEqual(pagePassword, env.PUBLISH_PASSWORD)) {
+  // Validate JWT token
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) {
     return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
+      JSON.stringify({ error: "Missing authentication token" }),
+      { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
+    );
+  }
+  const jwtResult = await verifyJWT(token, env.JWT_SECRET);
+  if (!jwtResult.valid) {
+    return new Response(
+      JSON.stringify({ error: jwtResult.error }),
       { status: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
     );
   }
@@ -365,7 +375,7 @@ export const onRequestOptions: PagesFunction = async () => {
     headers: {
       "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Secret",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 };
