@@ -236,8 +236,7 @@ export default function RecipeFilter({ recipes }: Props) {
                   )}
                   {r.source === "community" && (
                     <div className="absolute top-0 left-0 pointer-events-none">
-                      <div className="bg-sage text-warm-white text-[8px] font-bold uppercase tracking-wider pl-2.5 pr-7 py-px shadow-sm"
-                        style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%)" }}
+                      <div className="bg-sage text-warm-white text-[7px] font-bold uppercase tracking-wider pl-2 pr-3 shadow-sm rounded-br-lg leading-4"
                       >
                         Community
                       </div>
