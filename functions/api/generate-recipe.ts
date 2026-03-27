@@ -46,6 +46,35 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 5; // max requests per window
 const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
 
+// Abuse detection: track failed validation attempts
+const failedValidationMap = new Map<string, { count: number; blockedUntil: number }>();
+const MAX_FAILED_VALIDATIONS = 5;
+const FAILED_VALIDATION_WINDOW = 30 * 60 * 1000; // 30 minutes
+const ABUSE_BLOCK_DURATION = 60 * 60 * 1000; // blocked for 1 hour
+
+function checkAbuseBan(ip: string): boolean {
+  const entry = failedValidationMap.get(ip);
+  if (!entry) return true;
+  if (Date.now() > entry.blockedUntil) {
+    failedValidationMap.delete(ip);
+    return true;
+  }
+  return entry.count < MAX_FAILED_VALIDATIONS;
+}
+
+function recordFailedValidation(ip: string): void {
+  const now = Date.now();
+  const entry = failedValidationMap.get(ip);
+  if (!entry || now > entry.blockedUntil) {
+    failedValidationMap.set(ip, { count: 1, blockedUntil: now + FAILED_VALIDATION_WINDOW });
+  } else {
+    entry.count++;
+    if (entry.count >= MAX_FAILED_VALIDATIONS) {
+      entry.blockedUntil = now + ABUSE_BLOCK_DURATION;
+    }
+  }
+}
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
@@ -81,8 +110,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // Rate limiting
+  // Abuse detection + rate limiting
   const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!checkAbuseBan(clientIP)) {
+    return new Response(
+      JSON.stringify({ error: "Too many invalid requests. Please try again later." }),
+      { status: 429, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
+    );
+  }
   if (!checkRateLimit(clientIP)) {
     return new Response(
       JSON.stringify({ error: "Too many requests. Please try again later." }),
@@ -136,6 +171,7 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
       try {
         const validation = JSON.parse(validationResult);
         if (!validation.valid) {
+          recordFailedValidation(clientIP);
           await sendSSE(writer, encoder, "error", {
             message: validation.reason || `"${input.dish}" doesn't appear to be a real food or dish. Please enter a valid recipe name.`,
           });
