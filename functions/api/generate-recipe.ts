@@ -255,11 +255,11 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         detail: "Deploying 2 research agents in parallel...",
       });
 
-      const dish = input.dish;
+      const dishName = input.dish;
       const researchBriefs = [
         {
           focus: "Best Recipes, Techniques & Food Science",
-          prompt: `You are deeply researching "${dish}" for a recipe project. Search for the BEST versions from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, etc.). For each source, extract:
+          prompt: `You are deeply researching "${dishName}" for a recipe project. Search for the BEST versions from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, etc.). For each source, extract:
 - Exact techniques, temperatures, and timing
 - Ingredient ratios and proportions
 - The food science behind why their approach works
@@ -271,7 +271,7 @@ Research brief for context:\n${researchBrief}`,
         },
         {
           focus: "Common Mistakes, Pro Tips & Regional Authenticity",
-          prompt: `You are researching "${dish}" for a recipe project. Cover two areas:
+          prompt: `You are researching "${dishName}" for a recipe project. Cover two areas:
 
 1. MISTAKES & TIPS: Find the most common mistakes home cooks make with this dish and professional tips to avoid them. Focus on pitfalls that separate mediocre from excellent results.
 
