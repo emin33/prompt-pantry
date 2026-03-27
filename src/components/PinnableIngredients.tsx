@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ScalerProvider, useScaler } from "./ServingScaler";
 import ServingScaler from "./ServingScaler";
-import IngredientList from "./IngredientList";
+import IngredientList, { formatAmount } from "./IngredientList";
 import CollapsibleSection from "./CollapsibleSection";
 
 interface IngredientItem {
@@ -31,6 +31,84 @@ function ServingDisclaimer() {
       amounts have been adjusted for {servings} servings. Step instructions
       still reference the original {baseServings}-serving quantities.
     </div>
+  );
+}
+
+function formatIngredientsAsText(groups: IngredientGroup[], scale: number, servings: number): string {
+  const lines: string[] = [`Ingredients (${servings} servings)`, ""];
+  for (const group of groups) {
+    lines.push(group.name.toUpperCase());
+    for (const item of group.items) {
+      const amt = item.amount > 0 ? formatAmount(item.amount * scale) : "";
+      const parts = [amt, item.unit, item.name].filter(Boolean).join(" ");
+      lines.push(`- ${parts}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n").trim();
+}
+
+function CopyShareButtons({ groups }: { groups: IngredientGroup[] }) {
+  const { scale, servings } = useScaler();
+  const [copied, setCopied] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && !!navigator.share);
+  }, []);
+
+  const getText = () => formatIngredientsAsText(groups, scale, servings);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(getText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({ title: "Ingredient List", text: getText() });
+    } catch {
+      // User cancelled share
+    }
+  };
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        onClick={handleCopy}
+        className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-terracotta transition-colors"
+        title="Copy ingredient list"
+      >
+        {copied ? (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Copied!
+          </>
+        ) : (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copy list
+          </>
+        )}
+      </button>
+      {canShare && (
+        <button
+          onClick={handleShare}
+          className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-terracotta transition-colors"
+          title="Share ingredient list"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          Share
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -77,17 +155,21 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
       {/* Main ingredients section */}
       <div className="bg-warm-white rounded-xl border border-warm-gray/10 p-6 md:p-8">
         <CollapsibleSection title="Ingredients" icon="&#x1F9C2;">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => setPinned(true)}
-              className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-terracotta transition-colors"
-              title="Pin ingredients to sidebar while you cook"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-              Pin to sidebar
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setPinned(true)}
+                className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-terracotta transition-colors"
+                title="Pin ingredients to sidebar while you cook"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                Pin to sidebar
+              </button>
+              <span className="text-warm-gray/30">|</span>
+              <CopyShareButtons groups={groups} />
+            </div>
             <ServingScaler baseServings={servings} />
           </div>
           <ServingDisclaimer />

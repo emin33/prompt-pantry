@@ -27,6 +27,35 @@ const allTechniques = await getCollection("techniques", ({ data: d }) =>
 const related = allTechniques.filter((t) =>
   data.relatedTechniques.includes(t.data.slug)
 );
+
+// Extract h2 headings from raw MDX body for table of contents
+const headingRegex = /^## (.+)$/gm;
+const headings: { text: string; id: string }[] = [];
+let match;
+while ((match = headingRegex.exec(technique.body || "")) !== null) {
+  const text = match[1].trim();
+  // Generate slug matching rehype-slug's algorithm
+  const id = text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  headings.push({ text, id });
+}
+
+// Category gradient colors for the fallback banner
+const categoryGradients: Record<string, string> = {
+  Fundamentals: "from-sage/20 via-sage-light/40 to-cream",
+  "Heat Control": "from-terracotta/15 via-terracotta-light/20 to-cream",
+  "Knife Skills": "from-warm-gray/15 via-warm-gray/10 to-cream",
+  "Sauce Work": "from-golden/15 via-golden-light/40 to-cream",
+  Noodles: "from-terracotta-light/20 via-golden-light/30 to-cream",
+  Meat: "from-terracotta-dark/15 via-terracotta/10 to-cream",
+  Baking: "from-golden/20 via-golden-light/40 to-cream",
+};
+
+const gradient = categoryGradients[data.category] || categoryGradients["Fundamentals"];
 ---
 
 <Layout title={data.title} description={data.description} ogType="article">
@@ -41,6 +70,25 @@ const related = allTechniques.filter((t) =>
       Back
     </button>
 
+    {/* Hero: image or gradient fallback */}
+    {data.image ? (
+      <div class="rounded-xl overflow-hidden mb-8 aspect-[16/9]">
+        <img src={data.image} alt={data.title} class="w-full h-full object-cover" />
+      </div>
+    ) : (
+      <div class={`rounded-xl mb-8 h-32 md:h-40 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+        <span class="text-5xl md:text-6xl opacity-60">
+          {data.category === "Fundamentals" && "🧪"}
+          {data.category === "Heat Control" && "🔥"}
+          {data.category === "Knife Skills" && "🔪"}
+          {data.category === "Sauce Work" && "🧈"}
+          {data.category === "Noodles" && "🍝"}
+          {data.category === "Meat" && "🥩"}
+          {data.category === "Baking" && "🍞"}
+        </span>
+      </div>
+    )}
+
     <div class="mb-8">
       <div class="flex items-center gap-2 mb-3">
         <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-sage-light text-sage-dark">
@@ -53,6 +101,22 @@ const related = allTechniques.filter((t) =>
       <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-3">{data.title}</h1>
       <p class="text-lg text-warm-gray">{data.description}</p>
     </div>
+
+    {/* Table of Contents */}
+    {headings.length > 2 && (
+      <nav class="mb-10 pb-6 border-b border-warm-gray/15">
+        <div class="flex flex-wrap gap-2">
+          {headings.map((h) => (
+            <a
+              href={`#${h.id}`}
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-warm-white border border-warm-gray/15 text-warm-gray hover:text-terracotta hover:border-terracotta/30 transition-colors no-underline"
+            >
+              {h.text}
+            </a>
+          ))}
+        </div>
+      </nav>
+    )}
 
     <div class="recipe-prose">
       <Content />

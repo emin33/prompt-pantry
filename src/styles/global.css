@@ -98,6 +98,31 @@
   .recipe-prose strong {
     @apply font-semibold text-charcoal;
   }
+
+  /* Technique callout boxes for MDX content */
+  .technique-tip {
+    @apply my-6 p-4 pl-5 rounded-lg border-l-4 border-sage bg-sage-light/30;
+  }
+
+  .technique-tip p {
+    @apply mb-0 text-sm text-charcoal;
+  }
+
+  .technique-tip strong:first-child {
+    @apply text-sage-dark;
+  }
+
+  .technique-warning {
+    @apply my-6 p-4 pl-5 rounded-lg border-l-4 border-golden bg-golden-light/50;
+  }
+
+  .technique-warning p {
+    @apply mb-0 text-sm text-charcoal;
+  }
+
+  .technique-warning strong:first-child {
+    @apply text-golden;
+  }
 }
 
 @media print {

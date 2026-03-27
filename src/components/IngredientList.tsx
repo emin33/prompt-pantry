@@ -21,7 +21,7 @@ const FRACTIONS: Record<string, string> = {
   "0.75": "\u00BE",
 };
 
-function formatAmount(amount: number): string {
+export function formatAmount(amount: number): string {
   if (amount === 0) return "";
 
   const whole = Math.floor(amount);

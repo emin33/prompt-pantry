@@ -65,6 +65,7 @@ const techniques = defineCollection({
       "Noodles",
     ]),
     difficulty: z.enum(["Easy", "Medium", "Hard"]),
+    image: z.string().optional(),
     relatedTechniques: z.array(z.string()).optional().default([]),
     published: z.boolean().default(true),
   }),

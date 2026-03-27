@@ -24,31 +24,21 @@ const categoryOrder = [
   "Meat",
   "Baking",
 ];
-
-const categoryIcons: Record<string, string> = {
-  Fundamentals: "\u{1F9EA}",
-  "Heat Control": "\u{1F525}",
-  "Knife Skills": "\u{1F52A}",
-  "Sauce Work": "\u{1F9C8}",
-  Noodles: "\u{1F35D}",
-  Meat: "\u{1F969}",
-  Baking: "\u{1F35E}",
-};
 ---
 
 <Layout title="Techniques" description="Cooking technique guides and fundamentals.">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
     <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-2">Techniques</h1>
-    <p class="text-warm-gray mb-10">
+    <p class="text-warm-gray mb-4">
       The building blocks behind every recipe. Learn a technique once, use it everywhere.
     </p>
+    <div class="w-24 h-0.5 bg-sage mb-10"></div>
 
     {categoryOrder
       .filter((cat) => grouped[cat])
       .map((cat) => (
         <section class="mb-10">
-          <h2 class="font-display text-xl text-charcoal mb-4 pb-2 border-b border-warm-gray/15 flex items-center gap-2">
-            <span>{categoryIcons[cat] || ""}</span>
+          <h2 class="font-display text-xl text-charcoal mb-4 pb-2 border-b border-warm-gray/15">
             {cat}
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -57,24 +47,18 @@ const categoryIcons: Record<string, string> = {
               .map((t) => (
                 <a
                   href={`/techniques/${t.data.slug}`}
-                  class="group block p-5 rounded-xl bg-warm-white border border-warm-gray/10 hover:border-warm-gray/25 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 no-underline"
+                  class="technique-card group block p-5 rounded-xl bg-warm-white border border-warm-gray/10 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 no-underline"
                 >
-                  <div class="flex items-start gap-3">
-                    <svg
-                      class="w-5 h-5 mt-0.5 text-sage flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+                  <div>
                     <div>
                       <span class="font-medium text-charcoal group-hover:text-sage-dark transition-colors">
                         {t.data.title}
                       </span>
                       <span class="block text-sm text-warm-gray mt-1 leading-relaxed">
                         {t.data.description}
+                      </span>
+                      <span class="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium bg-golden-light text-golden">
+                        {t.data.difficulty}
                       </span>
                     </div>
                   </div>
@@ -85,3 +69,21 @@ const categoryIcons: Record<string, string> = {
       ))}
   </div>
 </Layout>
+
+<style>
+  .technique-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .technique-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #C75B3F;
+    border-radius: 3px 0 0 3px;
+  }
+</style>
