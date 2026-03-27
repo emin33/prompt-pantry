@@ -1,13 +1,29 @@
 interface Env {
   GITHUB_TOKEN: string;
   DEPLOY_HOOK_URL: string;
+  PUBLISH_PASSWORD: string;
 }
 
 interface PublishRequest {
   slug: string;
   mdx: string;
   research?: string;
+  password: string;
 }
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
+
+const ALLOWED_ORIGIN = "https://promptpantry.org";
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
@@ -16,12 +32,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     input = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ error: "Invalid JSON body" }, {
+      status: 400,
+      headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
+    });
   }
 
-  // Validate slug
+  // Authenticate
+  if (!input.password || !timingSafeEqual(input.password, env.PUBLISH_PASSWORD)) {
+    return Response.json({ error: "Unauthorized" }, {
+      status: 403,
+      headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
+    });
+  }
+
+  // Validate slug (max 100 chars, lowercase alphanumeric + hyphens only)
   const slug = input.slug;
-  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+  if (!slug || !/^[a-z0-9-]+$/.test(slug) || slug.length > 100) {
     return Response.json(
       { error: "Invalid slug — must be lowercase alphanumeric with hyphens" },
       { status: 400 }
@@ -77,8 +104,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     );
 
     if (!commitRes.ok) {
-      const text = await commitRes.text();
-      throw new Error(`GitHub API error (${commitRes.status}): ${text}`);
+      console.error(`GitHub API error (${commitRes.status}): ${await commitRes.text()}`);
+      throw new Error("Failed to commit recipe to repository");
     }
 
     // Commit research report if provided
@@ -115,13 +142,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       url: `/recipes/${slug}`,
       message:
         "Recipe published! It will be live in about 30 seconds after the site rebuilds.",
+    }, {
+      headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN },
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unknown error occurred";
+    console.error("Publish error:", err);
     return Response.json(
-      { error: `Failed to publish: ${message}` },
-      { status: 500 }
+      { error: "Failed to publish recipe. Please try again." },
+      { status: 500, headers: { "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
     );
   }
 };
@@ -130,7 +158,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, {
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },

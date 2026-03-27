@@ -184,6 +184,7 @@ export default function RecipeGenerator() {
           slug: recipe.slug,
           mdx: recipe.mdx,
           research: recipe.research,
+          password: lastInput?.password,
         }),
       });
 
@@ -224,7 +225,7 @@ export default function RecipeGenerator() {
       setPublishError(message);
       setState("preview");
     }
-  }, [recipe, pollUntilLive]);
+  }, [recipe, lastInput, pollUntilLive]);
 
   const handleRegenerate = () => {
     setState("idle");

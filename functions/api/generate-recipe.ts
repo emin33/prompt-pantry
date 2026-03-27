@@ -27,6 +27,37 @@ interface GenerateRequest {
   feedback?: string;
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
+}
+
+const ALLOWED_ORIGIN = "https://promptpantry.org";
+
+// Simple in-memory rate limiter (per worker instance)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5; // max requests per window
+const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
 function sendSSE(
   controller: WritableStreamDefaultWriter,
   encoder: TextEncoder,
@@ -50,18 +81,29 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // Validate password
-  if (!input.password || input.password !== env.PUBLISH_PASSWORD) {
+  // Rate limiting
+  const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+  if (!checkRateLimit(clientIP)) {
     return new Response(
-      JSON.stringify({ error: "Invalid access code" }),
-      { status: 403, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Too many requests. Please try again later." }),
+      { status: 429, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
     );
   }
 
-  if (!input.dish || input.dish.trim().length < 2) {
+  // Validate password (timing-safe)
+  if (!input.password || !timingSafeEqual(input.password, env.PUBLISH_PASSWORD)) {
     return new Response(
-      JSON.stringify({ error: "Dish name is required (min 2 chars)" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Invalid access code" }),
+      { status: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
+    );
+  }
+
+  // Validate dish input
+  const dish = input.dish?.trim() || "";
+  if (dish.length < 2 || dish.length > 200) {
+    return new Response(
+      JSON.stringify({ error: "Dish name must be 2-200 characters" }),
+      { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": ALLOWED_ORIGIN } }
     );
   }
 
@@ -231,8 +273,12 @@ Research brief for context:\n${researchBrief}`,
 
       await sendSSE(writer, encoder, "done", {});
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unknown error occurred";
+      console.error("Generation pipeline error:", err);
+      const rawMessage = err instanceof Error ? err.message : "Unknown error";
+      // Don't leak API details to the client
+      const message = rawMessage.includes("API error")
+        ? "An AI service encountered an error. Please try again."
+        : rawMessage;
       await sendSSE(writer, encoder, "error", { message });
     } finally {
       await writer.close();
@@ -244,7 +290,7 @@ Research brief for context:\n${researchBrief}`,
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
     },
   });
 };
@@ -253,7 +299,7 @@ Research brief for context:\n${researchBrief}`,
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, {
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },

@@ -64,8 +64,8 @@ export async function callClaudeWithWebSearch(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Claude API error (${res.status}): ${text}`);
+    console.error(`Claude API error (${res.status}): ${await res.text()}`);
+    throw new Error(`Claude API error (${res.status})`);
   }
 
   const data: ClaudeResponse = await res.json();
