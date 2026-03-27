@@ -26,7 +26,7 @@ function ServingDisclaimer() {
   if (servings === baseServings) return null;
 
   return (
-    <div className="mt-3 px-3 py-2 rounded-lg bg-golden-light/50 border border-golden/20 text-xs text-warm-gray">
+    <div className="mb-3 px-3 py-2 rounded-lg bg-golden-light/50 border border-golden/20 text-xs text-warm-gray">
       <span className="font-semibold text-golden">Note:</span> Ingredient
       amounts have been adjusted for {servings} servings. Step instructions
       still reference the original {baseServings}-serving quantities.
@@ -90,8 +90,8 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
             </button>
             <ServingScaler baseServings={servings} />
           </div>
-          <IngredientList groups={groups} />
           <ServingDisclaimer />
+          <IngredientList groups={groups} />
         </CollapsibleSection>
       </div>
 
