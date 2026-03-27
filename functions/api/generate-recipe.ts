@@ -349,10 +349,8 @@ Research brief for context:\n${researchBrief}`,
     } catch (err) {
       console.error("Generation pipeline error:", err);
       const rawMessage = err instanceof Error ? err.message : "Unknown error";
-      // Don't leak API details to the client
-      const message = rawMessage.includes("API error")
-        ? "An AI service encountered an error. Please try again."
-        : rawMessage;
+      // Include error detail for debugging (remove in production later)
+      const message = rawMessage;
       await sendSSE(writer, encoder, "error", { message });
     } finally {
       await writer.close();
