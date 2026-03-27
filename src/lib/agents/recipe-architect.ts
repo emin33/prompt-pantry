@@ -55,7 +55,13 @@ Guidelines for the recipe content:
 - Description should be compelling but not use generic phrases like "restaurant-quality" or "game-changing"
 - CRITICAL: The servings MUST match the user's requested serving count exactly. Scale all ingredient amounts accordingly.
 - CRITICAL: Every single ingredient mentioned in the steps MUST appear in the ingredients list. Do not reference tamarind, sugar, fish sauce, or any other ingredient in the steps without listing it in the ingredients groups. Audit your steps against your ingredients list before finalizing.
-- Category guidance: Use "Meat" for dishes where meat/poultry is the star, "Seafood" for fish/shrimp-forward dishes, "Pasta" ONLY for Italian-style pasta dishes. Noodle stir-fries, ramen, pho, etc. should use whichever category best fits the primary protein or "Sides" if no clear protein.`;
+- Category guidance — READ CAREFULLY and follow exactly:
+  * "Meat" = beef, pork, lamb, chicken, turkey, duck, or other poultry/game as the primary protein
+  * "Seafood" = shrimp, fish, crab, lobster, scallops, or other seafood as the primary protein
+  * "Pasta" = ONLY Italian-style pasta dishes (spaghetti, fettuccine, lasagna, etc.)
+  * "Vegetarian" = no meat or seafood
+  * Noodle stir-fries with shrimp = "Seafood". Noodle stir-fries with chicken = "Meat". Noodle soups = "Soup".
+  * If a dish has BOTH meat and seafood, use whichever is the star protein.`;
 
 export function buildRecipeArchitectMessage(
   research: string,
