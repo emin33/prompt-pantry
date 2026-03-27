@@ -149,22 +149,49 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   // Run the pipeline in the background
   (async () => {
     try {
-      // Step 0: Validate the dish is actually food (Gemini free, fast)
+      // Step 0: Validate the dish is actually food
       await sendSSE(writer, encoder, "agent", {
         agent: 0,
         name: "Validating Input",
         status: "running",
       });
 
+      // Local pre-check: catch obvious garbage before burning a Gemini call
+      const dishLower = dish.toLowerCase();
+      const localInvalid = (() => {
+        // Must contain at least one letter
+        if (!/[a-zA-Z]/.test(dish)) return "Please enter a dish name with letters.";
+        // Reject if mostly numbers/symbols (>50% non-letter)
+        const letterCount = (dish.match(/[a-zA-Z]/g) || []).length;
+        if (letterCount / dish.length < 0.5) return "That doesn't look like a dish name.";
+        // Reject keyboard spam (3+ consecutive consonants with no vowels)
+        if (/[^aeiou\s]{5,}/i.test(dishLower.replace(/[^a-z]/g, ""))) return "That doesn't look like a dish name.";
+        // Reject obvious non-food words
+        const blocklist = ["homework", "hello world", "test", "asdf", "qwerty", "password", "admin", "login", "http", "www", ".com", ".org", "javascript", "python", "select ", "drop ", "delete "];
+        if (blocklist.some((w) => dishLower.includes(w))) return "Please enter an actual food or dish.";
+        // Must be reasonable word count (1-10 words)
+        const wordCount = dish.trim().split(/\s+/).length;
+        if (wordCount > 10) return "Dish name seems too long. Keep it concise.";
+        return null;
+      })();
+
+      if (localInvalid) {
+        recordFailedValidation(clientIP);
+        await sendSSE(writer, encoder, "error", { message: localInvalid });
+        await writer.close();
+        return;
+      }
+
+      // LLM validation for borderline cases (Gemini free)
       const validationResult = await callGemini(
         env.GEMINI_API_KEY,
         `You are a food validator. Your ONLY job is to determine if the user's input is a real food, dish, or recipe that can be cooked. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
 
 Examples of VALID inputs: "pad thai", "chicken parmesan", "sourdough bread", "chocolate lava cake", "miso soup", "beef wellington", "scrambled eggs"
-Examples of INVALID inputs: "box of nails", "asdfgh", "my homework", "a car", "hello world", "the color blue"
+Examples of INVALID inputs: "box of nails", "my homework", "a car", "the color blue", "clean my room"
 
 Be generous — if it could reasonably be a food or dish from any cuisine, it's valid. Misspellings are fine.`,
-        `Is this a valid food/dish to make a recipe for? "${input.dish}"`,
+        `Is this a valid food/dish to make a recipe for? "${dish}"`,
         true // JSON mode
       );
 
@@ -173,7 +200,7 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         if (!validation.valid) {
           recordFailedValidation(clientIP);
           await sendSSE(writer, encoder, "error", {
-            message: validation.reason || `"${input.dish}" doesn't appear to be a real food or dish. Please enter a valid recipe name.`,
+            message: validation.reason || `"${dish}" doesn't appear to be a real food or dish. Please enter a valid recipe name.`,
           });
           await writer.close();
           return;
