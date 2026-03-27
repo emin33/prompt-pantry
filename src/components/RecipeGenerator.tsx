@@ -35,20 +35,23 @@ export default function RecipeGenerator() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
 
-  const pollUntilLive = useCallback(async (slug: string) => {
+  const pollUntilLive = useCallback(async (slug: string, title: string) => {
     const url = `/recipes/${slug}/`;
     const maxAttempts = 30;
+    // Wait at least 15 seconds before first check to let the build start
+    await new Promise((r) => setTimeout(r, 15000));
     for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (res.ok) {
           const text = await res.text();
-          if (text.includes(slug)) return true;
+          // Check for the recipe title in the page content to confirm it's the real page
+          if (text.includes(title) && text.includes("recipe-prose")) return true;
         }
       } catch {
         // Not live yet
       }
+      await new Promise((r) => setTimeout(r, 5000));
     }
     return false;
   }, []);
@@ -199,7 +202,7 @@ export default function RecipeGenerator() {
         )
       );
 
-      const isLive = await pollUntilLive(recipe.slug);
+      const isLive = await pollUntilLive(recipe.slug, recipe.title);
 
       setAgents((prev) =>
         prev.map((a) =>
