@@ -5,6 +5,7 @@ import Layout from "../../layouts/Layout.astro";
 import RecipeHero from "../../components/RecipeHero.astro";
 import PinnableIngredients from "../../components/PinnableIngredients";
 import RecipeCard from "../../components/RecipeCard.astro";
+import CookMode from "../../components/CookMode";
 
 export async function getStaticPaths() {
   const recipes = await getCollection("recipes", ({ data }) => data.published);
@@ -94,16 +95,20 @@ const related = allRecipes
       imageAspect={data.imageAspect}
     />
 
-    {/* Print button */}
-    <button
-      onclick="window.print()"
-      class="no-print mb-8 inline-flex items-center gap-1.5 text-sm text-warm-gray hover:text-charcoal transition-colors"
-    >
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z" />
-      </svg>
-      Print Recipe
-    </button>
+    {/* Utility buttons */}
+    <div class="no-print mb-8 flex items-center gap-4">
+      <button
+        onclick="window.print()"
+        class="inline-flex items-center gap-1.5 text-sm text-warm-gray hover:text-charcoal transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z" />
+        </svg>
+        Print Recipe
+      </button>
+      <span class="text-warm-gray/30">|</span>
+      <CookMode client:load />
+    </div>
 
     {/* Ingredients */}
     <section id="ingredients" class="mb-10 scroll-mt-20">
