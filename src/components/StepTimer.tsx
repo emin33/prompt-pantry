@@ -38,22 +38,25 @@ export default function StepTimer({ minutes, label }: Props) {
           try {
             if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
             const ctx = new AudioContext();
-            const playBeep = (time: number, freq: number) => {
+            const playBeep = (time: number, freq: number, dur = 0.15) => {
               const osc = ctx.createOscillator();
               const gain = ctx.createGain();
               osc.connect(gain);
               gain.connect(ctx.destination);
               osc.frequency.value = freq;
-              osc.type = "sine";
-              gain.gain.setValueAtTime(0.75, time);
-              gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+              osc.type = "square";
+              gain.gain.setValueAtTime(0.6, time);
+              gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
               osc.start(time);
-              osc.stop(time + 0.3);
+              osc.stop(time + dur);
             };
             const now = ctx.currentTime;
-            playBeep(now, 880);
-            playBeep(now + 0.35, 880);
-            playBeep(now + 0.7, 1100);
+            // Three rounds of rapid double-beeps, escalating pitch
+            for (let r = 0; r < 3; r++) {
+              const t = now + r * 0.7;
+              playBeep(t, 1000 + r * 200);
+              playBeep(t + 0.18, 1000 + r * 200);
+            }
           } catch {}
           return 0;
         }
