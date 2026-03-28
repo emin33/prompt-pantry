@@ -1,5 +1,5 @@
 interface Env {
-  GEMINI_API_KEY: string;
+  GROQ_API_KEY: string;
 }
 
 interface ChatMessage {
@@ -12,8 +12,8 @@ interface ChatRequest {
   recipeContext: string;
 }
 
-const GEMINI_STREAM_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:streamGenerateContent?alt=sse";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
 // Simple in-memory rate limiting
 const rateLimits = new Map<string, number[]>();
@@ -68,32 +68,37 @@ Guidelines:
 - Be warm and encouraging — they might be a beginner
 - Use plain language, not chef jargon unless they used it first`;
 
-  const geminiMessages = messages.map((m) => ({
-    role: m.role === "user" ? "user" : "model",
-    parts: [{ text: m.content }],
-  }));
+  const openaiMessages = [
+    { role: "system", content: systemPrompt },
+    ...messages.map((m) => ({
+      role: m.role === "model" ? "assistant" : "user",
+      content: m.content,
+    })),
+  ];
 
-  const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: geminiMessages,
-  };
-
-  const res = await fetch(`${GEMINI_STREAM_URL}&key=${env.GEMINI_API_KEY}`, {
+  const res = await fetch(GROQ_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: openaiMessages,
+      stream: true,
+    }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error(`Gemini error (${res.status}): ${errText}`);
+    console.error(`Groq error (${res.status}): ${errText}`);
     return new Response(JSON.stringify({ error: "AI service error" }), {
       status: 502,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Forward the SSE stream from Gemini
+  // Forward the SSE stream from Groq (OpenAI-compatible format)
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
@@ -114,11 +119,11 @@ Guidelines:
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
-          if (!jsonStr) continue;
+          if (!jsonStr || jsonStr === "[DONE]") continue;
 
           try {
             const data = JSON.parse(jsonStr);
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const text = data.choices?.[0]?.delta?.content;
             if (text) {
               await writer.write(
                 encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
