@@ -34,13 +34,26 @@ export default function StepTimer({ minutes, label }: Props) {
         if (prev <= 1) {
           clear();
           setState("done");
-          // Try to alert
+          // Alert: vibration + synthesized beep
           try {
             if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-            const audio = new Audio(
-              "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ=="
-            );
-            audio.play().catch(() => {});
+            const ctx = new AudioContext();
+            const playBeep = (time: number, freq: number) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = freq;
+              osc.type = "sine";
+              gain.gain.setValueAtTime(0.3, time);
+              gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+              osc.start(time);
+              osc.stop(time + 0.3);
+            };
+            const now = ctx.currentTime;
+            playBeep(now, 880);
+            playBeep(now + 0.35, 880);
+            playBeep(now + 0.7, 1100);
           } catch {}
           return 0;
         }
