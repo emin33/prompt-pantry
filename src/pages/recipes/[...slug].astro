@@ -18,6 +18,39 @@ const { recipe } = Astro.props;
 const { Content } = await render(recipe);
 const { data } = recipe;
 
+// Build JSON-LD structured data
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  name: data.title,
+  description: data.description,
+  ...(data.image && { image: `https://promptpantry.org${data.image}` }),
+  prepTime: `PT${data.prepTime}M`,
+  cookTime: `PT${data.cookTime}M`,
+  totalTime: `PT${data.totalTime}M`,
+  recipeYield: `${data.servings} servings`,
+  recipeCategory: data.category,
+  recipeCuisine: data.cuisine,
+  recipeIngredient: data.ingredients.flatMap((group) =>
+    group.items.map((item) => {
+      const parts = [];
+      if (item.amount > 0) parts.push(String(item.amount));
+      if (item.unit) parts.push(item.unit);
+      parts.push(item.name);
+      return parts.join(" ");
+    })
+  ),
+  recipeInstructions: (recipe.body || "")
+    .split(/^### /m)
+    .filter((s) => s.trim())
+    .map((block) => {
+      const lines = block.trim().split("\n");
+      const name = lines[0].trim();
+      const text = lines.slice(1).join(" ").replace(/[*_#`]/g, "").trim();
+      return { "@type": "HowToStep", name, text };
+    }),
+};
+
 // Related recipes: same cuisine or shared tags
 const allRecipes = await getCollection("recipes", ({ data: d }) => d.published && d.slug !== data.slug);
 const related = allRecipes
@@ -34,6 +67,7 @@ const related = allRecipes
 ---
 
 <Layout title={data.title} description={data.description} ogType="article">
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <article class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
     {/* Jump to Recipe */}
     <a

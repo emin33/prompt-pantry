@@ -37,6 +37,7 @@ const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://promptpantry.org/images/og-image.png" />
     <title>{fullTitle}</title>
+    <slot name="head" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
