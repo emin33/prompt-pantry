@@ -143,37 +143,31 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
           emittedSentences.push(...newSentences);
 
           setMessages((prev) => {
-            let updated = [...prev];
-            // Remove typing indicator on first real sentence
-            if (!typingRemoved) {
-              updated = updated.filter((m, i) => !(i === updated.length - 1 && m.role === "model" && m.content === ""));
-              typingRemoved = true;
-            }
+            // Remove any existing typing indicator
+            let updated = prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length));
+            if (!typingRemoved) typingRemoved = true;
             // Add each new sentence as its own bubble
             for (const s of newSentences) {
               updated.push({ role: "model", content: s });
             }
+            // Add typing indicator for more content coming
+            updated.push({ role: "model", content: "" });
             return updated;
           });
         }
       }
 
-      // Emit any remaining text that didn't end with punctuation
-      const emittedText = emittedSentences.join(" ");
-      const remainder = accumulated.slice(emittedText.length).trim();
-      if (remainder) {
-        setMessages((prev) => {
-          let updated = [...prev];
-          if (!typingRemoved) {
-            updated = updated.filter((m, i) => !(i === updated.length - 1 && m.role === "model" && m.content === ""));
-          }
+      // Remove trailing typing indicator
+      setMessages((prev) => {
+        let updated = prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length));
+        // Emit any remaining text that didn't end with punctuation
+        const emittedText = emittedSentences.join(" ");
+        const remainder = accumulated.slice(emittedText.length).trim();
+        if (remainder) {
           updated.push({ role: "model", content: remainder });
-          return updated;
-        });
-      } else if (!typingRemoved) {
-        // No content at all — remove typing indicator
-        setMessages((prev) => prev.filter((m, i) => !(i === prev.length - 1 && m.role === "model" && m.content === "")));
-      }
+        }
+        return updated;
+      });
     } catch {
       setMessages((prev) => {
         const filtered = prev.filter((m, i) => !(i === prev.length - 1 && m.role === "model" && m.content === ""));
