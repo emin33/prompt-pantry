@@ -78,20 +78,26 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
 
     const userMsg: Message = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    // Show user message + a typing indicator
+    setMessages([...newMessages, { role: "model", content: "" }]);
     setInput("");
     setStreaming(true);
-
-    // Add empty assistant message to stream into
-    const assistantMsg: Message = { role: "model", content: "" };
-    setMessages([...newMessages, assistantMsg]);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          // Consolidate consecutive same-role messages for the API
+          messages: newMessages.reduce<Message[]>((acc, m) => {
+            const last = acc[acc.length - 1];
+            if (last && last.role === m.role) {
+              last.content += " " + m.content;
+            } else {
+              acc.push({ ...m });
+            }
+            return acc;
+          }, []).map((m) => ({ role: m.role, content: m.content })),
           recipeContext: fullContext,
         }),
       });
@@ -100,16 +106,18 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let sseBuffer = "";
       let accumulated = "";
+      const emittedSentences: string[] = [];
+      let typingRemoved = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const chunks = buffer.split("\n\n");
-        buffer = chunks.pop() || "";
+        sseBuffer += decoder.decode(value, { stream: true });
+        const chunks = sseBuffer.split("\n\n");
+        sseBuffer = chunks.pop() || "";
 
         for (const chunk of chunks) {
           if (!chunk.startsWith("data: ")) continue;
@@ -117,26 +125,59 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
           if (dataStr === "[DONE]") continue;
 
           try {
-            const { text } = JSON.parse(dataStr);
-            if (text) {
-              accumulated += text;
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: "model", content: accumulated };
-                return updated;
-              });
-            }
+            const { text: token } = JSON.parse(dataStr);
+            if (token) accumulated += token;
           } catch {}
         }
+
+        // Split accumulated text into sentences and emit complete ones
+        const sentenceRegex = /[^.!?]*[.!?](?:\s|$)/g;
+        let match;
+        const sentences: string[] = [];
+        while ((match = sentenceRegex.exec(accumulated)) !== null) {
+          sentences.push(match[0].trim());
+        }
+
+        if (sentences.length > emittedSentences.length) {
+          const newSentences = sentences.slice(emittedSentences.length);
+          emittedSentences.push(...newSentences);
+
+          setMessages((prev) => {
+            let updated = [...prev];
+            // Remove typing indicator on first real sentence
+            if (!typingRemoved) {
+              updated = updated.filter((m, i) => !(i === updated.length - 1 && m.role === "model" && m.content === ""));
+              typingRemoved = true;
+            }
+            // Add each new sentence as its own bubble
+            for (const s of newSentences) {
+              updated.push({ role: "model", content: s });
+            }
+            return updated;
+          });
+        }
+      }
+
+      // Emit any remaining text that didn't end with punctuation
+      const emittedText = emittedSentences.join(" ");
+      const remainder = accumulated.slice(emittedText.length).trim();
+      if (remainder) {
+        setMessages((prev) => {
+          let updated = [...prev];
+          if (!typingRemoved) {
+            updated = updated.filter((m, i) => !(i === updated.length - 1 && m.role === "model" && m.content === ""));
+          }
+          updated.push({ role: "model", content: remainder });
+          return updated;
+        });
+      } else if (!typingRemoved) {
+        // No content at all — remove typing indicator
+        setMessages((prev) => prev.filter((m, i) => !(i === prev.length - 1 && m.role === "model" && m.content === "")));
       }
     } catch {
       setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "model",
-          content: "Sorry, I couldn't process that. Please try again.",
-        };
-        return updated;
+        const filtered = prev.filter((m, i) => !(i === prev.length - 1 && m.role === "model" && m.content === ""));
+        return [...filtered, { role: "model", content: "Sorry, I couldn't process that. Please try again." }];
       });
     } finally {
       setStreaming(false);
