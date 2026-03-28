@@ -45,7 +45,7 @@ export default function StepTimer({ minutes, label }: Props) {
               gain.connect(ctx.destination);
               osc.frequency.value = freq;
               osc.type = "sine";
-              gain.gain.setValueAtTime(0.3, time);
+              gain.gain.setValueAtTime(0.75, time);
               gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
               osc.start(time);
               osc.stop(time + 0.3);
