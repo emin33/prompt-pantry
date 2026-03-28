@@ -10,9 +10,10 @@ interface Props {
   totalTime: number;
   equipment?: string[];
   image?: string;
+  imageAspect?: string;
 }
 
-const { title, description, cuisine, category, difficulty, prepTime, cookTime, totalTime, equipment, image } = Astro.props;
+const { title, description, cuisine, category, difficulty, prepTime, cookTime, totalTime, equipment, image, imageAspect } = Astro.props;
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -27,7 +28,7 @@ const flames = difficultyLevels[difficulty] || 1;
 <div class="mb-8">
   {/* Hero image */}
   {image && (
-    <div class="rounded-xl overflow-hidden mb-6 aspect-[16/9]">
+    <div class="rounded-xl overflow-hidden mb-6" style={`aspect-ratio: ${imageAspect || "16/9"};`}>
       <img src={image} alt={title} class="w-full h-full object-cover" />
     </div>
   )}

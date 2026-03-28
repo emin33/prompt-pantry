@@ -39,6 +39,7 @@ const recipes = defineCollection({
     servings: z.number(),
     ingredients: z.array(ingredientGroup),
     image: z.string().optional(),
+    imageAspect: z.string().optional(),
     tags: z.array(z.string()),
     techniques: z.array(z.string()).optional().default([]),
     equipment: z.array(z.string()).optional().default([]),

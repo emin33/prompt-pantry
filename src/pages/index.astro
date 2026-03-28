@@ -14,8 +14,8 @@ const communitySorted = communityRecipes.sort(
   (a, b) => b.data.publishedDate.localeCompare(a.data.publishedDate)
 ).slice(0, 6);
 
-const featured = sorted[0];
-const recent = sorted.slice(1, 7);
+const featured = sorted.find((r) => r.data.slug === "jamaican-jerk-chicken") || sorted[0];
+const recent = sorted.filter((r) => r.data.slug !== featured.data.slug).slice(0, 6);
 ---
 
 <Layout title="Prompt Pantry">
