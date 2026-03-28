@@ -109,7 +109,33 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
       let sseBuffer = "";
       let accumulated = "";
       const emittedSentences: string[] = [];
+      const sentenceQueue: string[] = [];
       let typingRemoved = false;
+      let dripping = false;
+
+      const drip = () => {
+        if (dripping) return;
+        dripping = true;
+        const interval = setInterval(() => {
+          const next = sentenceQueue.shift();
+          if (!next) {
+            dripping = false;
+            clearInterval(interval);
+            return;
+          }
+          setMessages((prev) => {
+            let updated = prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length));
+            if (!typingRemoved) typingRemoved = true;
+            updated.push({ role: "model", content: next });
+            updated.push({ role: "model", content: "" }); // typing indicator
+            return updated;
+          });
+        }, 600);
+        // Store for cleanup
+        dripIntervalRef.current = interval;
+      };
+
+      const dripIntervalRef = { current: null as ReturnType<typeof setInterval> | null };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -130,44 +156,46 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
           } catch {}
         }
 
-        // Split accumulated text into sentences and emit complete ones
-        const sentenceRegex = /[^.!?]*[.!?](?:\s|$)/g;
+        // Split accumulated text into sentences and queue complete ones
+        const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
         let match;
         const sentences: string[] = [];
         while ((match = sentenceRegex.exec(accumulated)) !== null) {
-          sentences.push(match[0].trim());
+          const s = match[0].trim();
+          if (s.length > 1) sentences.push(s);
         }
 
         if (sentences.length > emittedSentences.length) {
           const newSentences = sentences.slice(emittedSentences.length);
           emittedSentences.push(...newSentences);
-
-          setMessages((prev) => {
-            // Remove any existing typing indicator
-            let updated = prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length));
-            if (!typingRemoved) typingRemoved = true;
-            // Add each new sentence as its own bubble
-            for (const s of newSentences) {
-              updated.push({ role: "model", content: s });
-            }
-            // Add typing indicator for more content coming
-            updated.push({ role: "model", content: "" });
-            return updated;
-          });
+          sentenceQueue.push(...newSentences);
+          drip();
         }
       }
 
-      // Remove trailing typing indicator
-      setMessages((prev) => {
-        let updated = prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length));
-        // Emit any remaining text that didn't end with punctuation
-        const emittedText = emittedSentences.join(" ");
-        const remainder = accumulated.slice(emittedText.length).trim();
-        if (remainder) {
-          updated.push({ role: "model", content: remainder });
-        }
-        return updated;
+      // Queue any remaining text that didn't end with punctuation
+      const emittedText = emittedSentences.join(" ");
+      const remainder = accumulated.slice(emittedText.length).trim();
+      if (remainder && remainder.length > 1) {
+        sentenceQueue.push(remainder);
+        drip();
+      }
+
+      // Wait for queue to drain before cleaning up
+      await new Promise<void>((resolve) => {
+        const check = setInterval(() => {
+          if (sentenceQueue.length === 0) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 200);
       });
+
+      // Remove trailing typing indicator
+      setMessages((prev) =>
+        prev.filter((m, i) => !(m.role === "model" && m.content === "" && i >= newMessages.length))
+      );
+      if (dripIntervalRef.current) clearInterval(dripIntervalRef.current);
     } catch {
       setMessages((prev) => {
         const filtered = prev.filter((m, i) => !(i === prev.length - 1 && m.role === "model" && m.content === ""));

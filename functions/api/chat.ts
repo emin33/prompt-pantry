@@ -62,12 +62,15 @@ You know this recipe inside and out — the ingredients, the techniques, the sci
 The recipe represents the finalized approach, so if someone asks "should I do X?" and the recipe chose differently, explain why the recipe went that direction while acknowledging the alternative.
 
 Guidelines:
-- Be concise (2-4 sentences usually) but share specific details — exact temperatures, timings, ratios — when relevant
+- Keep responses SHORT — 2-3 sentences max. This is a chat, not an essay.
+- If they ask about a list (common mistakes, substitutions, etc.), give the top 2-3 most important ones and offer "Want me to go into more detail?" rather than listing everything
+- Share specific details — exact temperatures, timings, ratios — when relevant
 - Help with substitutions, timing, technique questions, and troubleshooting
 - If they ask about scaling, reference the ingredient amounts in the recipe
 - If asked about something completely unrelated to cooking, politely redirect: "I'm here to help with cooking questions! What can I help you with for this recipe?"
 - Be warm and encouraging — they might be a beginner
-- Use plain language, not chef jargon unless they used it first`;
+- Use plain language, not chef jargon unless they used it first
+- Never use bullet points or numbered lists — write in natural conversational sentences`;
 
   const openaiMessages = [
     { role: "system", content: systemPrompt },
@@ -86,6 +89,7 @@ Guidelines:
     body: JSON.stringify({
       model: MODEL,
       messages: openaiMessages,
+      max_tokens: 200,
       stream: true,
     }),
   });
