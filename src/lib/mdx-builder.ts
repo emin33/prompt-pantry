@@ -123,7 +123,7 @@ export function buildMDX(recipe: RecipeJSON, difficulty: string): string {
   }
 
   lines.push("techniques: []");
-  lines.push(`research: "/research/${recipe.slug}.md"`);
+  lines.push(`research: "/research/${slug}.md"`);
   lines.push(`source: "community"`);
   lines.push("published: true");
   lines.push(`publishedDate: ${escapeYaml(today)}`);
