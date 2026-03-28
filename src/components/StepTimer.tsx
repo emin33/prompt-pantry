@@ -52,10 +52,11 @@ export default function StepTimer({ minutes, label }: Props) {
             };
             const now = ctx.currentTime;
             // Three rounds of rapid double-beeps, escalating pitch
-            for (let r = 0; r < 3; r++) {
+            for (let r = 0; r < 4; r++) {
               const t = now + r * 0.7;
-              playBeep(t, 1000 + r * 200);
-              playBeep(t + 0.18, 1000 + r * 200);
+              playBeep(t, 1000 + r * 150);
+              playBeep(t + 0.18, 1000 + r * 150);
+              playBeep(t + 0.36, 1000 + r * 150);
             }
           } catch {}
           return 0;
