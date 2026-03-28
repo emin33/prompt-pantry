@@ -108,7 +108,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Commit research report if provided
     if (input.research) {
-      const researchPath = `research/${slug}.md`;
+      const researchPath = `public/research/${slug}.md`;
       const researchContent = btoa(
         unescape(encodeURIComponent(`# Research: ${slug}\n\n${input.research}`))
       );

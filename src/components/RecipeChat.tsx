@@ -7,21 +7,40 @@ interface Message {
 
 interface Props {
   recipeContext: string;
+  researchUrl?: string;
 }
 
-export default function RecipeChat({ recipeContext }: Props) {
+export default function RecipeChat({ recipeContext, researchUrl }: Props) {
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(true); // default hidden until checked
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [fullContext, setFullContext] = useState(recipeContext);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const researchLoaded = useRef(false);
 
   // Check localStorage on mount
   useEffect(() => {
     setDismissed(localStorage.getItem("chatDismissed") === "true");
   }, []);
+
+  // Fetch research file when chat is first opened
+  useEffect(() => {
+    if (!open || researchLoaded.current || !researchUrl) return;
+    researchLoaded.current = true;
+    fetch(researchUrl)
+      .then((res) => (res.ok ? res.text() : ""))
+      .then((text) => {
+        if (text) {
+          setFullContext(
+            (prev) => prev + "\n\n---\n\nDetailed research and sourcing notes:\n" + text
+          );
+        }
+      })
+      .catch(() => {});
+  }, [open, researchUrl]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -73,7 +92,7 @@ export default function RecipeChat({ recipeContext }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-          recipeContext,
+          recipeContext: fullContext,
         }),
       });
 
