@@ -305,7 +305,8 @@ Research brief for context:\n${researchBrief}`,
         env.GEMINI_API_KEY,
         RECIPE_ARCHITECT_SYSTEM,
         buildRecipeArchitectMessage(research, input),
-        true // JSON mode
+        true, // JSON mode
+        "gemini-3-flash-preview" // Better reasoning for recipe synthesis
       );
 
       const recipeData = parseRecipeJSON(recipeJsonStr);

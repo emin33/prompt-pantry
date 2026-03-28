@@ -1,5 +1,5 @@
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const GEMINI_BASE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -14,7 +14,8 @@ export async function callGemini(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  jsonMode = false
+  jsonMode = false,
+  model = "gemini-2.5-flash"
 ): Promise<string> {
   const body: Record<string, unknown> = {
     system_instruction: {
@@ -36,7 +37,7 @@ export async function callGemini(
 
   let lastError = "";
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    const res = await fetch(`${GEMINI_BASE_URL}/${model}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
