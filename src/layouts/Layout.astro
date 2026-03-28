@@ -7,16 +7,21 @@ interface Props {
   title: string;
   description?: string;
   ogType?: string;
+  ogImage?: string;
 }
 
 const {
   title,
   description = "Recipes for real kitchens.",
   ogType = "website",
+  ogImage,
 } = Astro.props;
 
 const siteTitle = "Prompt Pantry";
 const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+const ogImageUrl = ogImage
+  ? `https://promptpantry.org${ogImage}`
+  : "https://promptpantry.org/images/og-image.png";
 ---
 
 <!doctype html>
@@ -31,11 +36,11 @@ const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content={ogType} />
-    <meta property="og:image" content="https://promptpantry.org/images/og-image.png" />
+    <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://promptpantry.org/images/og-image.png" />
+    <meta name="twitter:image" content={ogImageUrl} />
     <title>{fullTitle}</title>
     <slot name="head" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -66,7 +66,7 @@ const related = allRecipes
   .map((r) => r.recipe);
 ---
 
-<Layout title={data.title} description={data.description} ogType="article">
+<Layout title={data.title} description={data.description} ogType="article" ogImage={data.image}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <article class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
     {/* Jump to Recipe */}
