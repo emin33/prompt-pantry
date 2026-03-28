@@ -71,7 +71,7 @@ const related = allRecipes
   <article class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
     {/* Jump to Recipe */}
     <a
-      href="#ingredients"
+      href="#recipe-body"
       class="jump-to-recipe inline-flex items-center gap-1.5 mb-6 px-4 py-2 rounded-lg bg-terracotta text-white text-sm font-medium hover:bg-terracotta-dark transition-colors no-underline"
     >
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -114,7 +114,7 @@ const related = allRecipes
     </section>
 
     {/* Recipe body (steps, notes, etc.) */}
-    <div class="recipe-prose" id="recipe-body">
+    <div class="recipe-prose scroll-mt-20" id="recipe-body">
       <Content />
     </div>
 
