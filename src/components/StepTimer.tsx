@@ -12,6 +12,7 @@ export default function StepTimer({ minutes, label }: Props) {
   const [remaining, setRemaining] = useState(totalSeconds);
   const [state, setState] = useState<TimerState>("idle");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const clear = useCallback(() => {
     if (intervalRef.current) {
@@ -38,6 +39,7 @@ export default function StepTimer({ minutes, label }: Props) {
           try {
             if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
             const ctx = new AudioContext();
+            audioCtxRef.current = ctx;
             const playBeep = (time: number, freq: number, dur = 0.15) => {
               const osc = ctx.createOscillator();
               const gain = ctx.createGain();
@@ -51,12 +53,11 @@ export default function StepTimer({ minutes, label }: Props) {
               osc.stop(time + dur);
             };
             const now = ctx.currentTime;
-            // Three rounds of rapid double-beeps, escalating pitch
-            for (let r = 0; r < 4; r++) {
+            for (let r = 0; r < 5; r++) {
               const t = now + r * 0.7;
-              playBeep(t, 1000 + r * 150);
-              playBeep(t + 0.18, 1000 + r * 150);
-              playBeep(t + 0.36, 1000 + r * 150);
+              playBeep(t, 1000 + r * 120);
+              playBeep(t + 0.18, 1000 + r * 120);
+              playBeep(t + 0.36, 1000 + r * 120);
             }
           } catch {}
           return 0;
@@ -68,6 +69,10 @@ export default function StepTimer({ minutes, label }: Props) {
 
   const reset = () => {
     clear();
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
     setState("idle");
     setRemaining(totalSeconds);
   };
