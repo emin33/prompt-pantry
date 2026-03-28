@@ -13,7 +13,7 @@ interface ChatRequest {
 }
 
 const GEMINI_STREAM_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:streamGenerateContent?alt=sse";
 
 // Simple in-memory rate limiting
 const rateLimits = new Map<string, number[]>();
