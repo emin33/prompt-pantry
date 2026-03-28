@@ -1,0 +1,12 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StepTimer from "../../components/StepTimer";
+---
+
+<Layout title="Timer Test" description="Debug page for testing timer alarm.">
+  <div class="max-w-md mx-auto px-4 py-20 text-center">
+    <h1 class="font-display text-3xl text-charcoal mb-6">Timer Test</h1>
+    <p class="text-warm-gray mb-8">Click to start a 5-second timer and test the alarm sound.</p>
+    <StepTimer client:load minutes={0.083} label="Test alarm" />
+  </div>
+</Layout>
