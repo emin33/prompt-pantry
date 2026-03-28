@@ -6,6 +6,7 @@ import RecipeHero from "../../components/RecipeHero.astro";
 import PinnableIngredients from "../../components/PinnableIngredients";
 import RecipeCard from "../../components/RecipeCard.astro";
 import CookMode from "../../components/CookMode";
+import RecipeChat from "../../components/RecipeChat";
 
 export async function getStaticPaths() {
   const recipes = await getCollection("recipes", ({ data }) => data.published);
@@ -51,6 +52,31 @@ const jsonLd = {
       return { "@type": "HowToStep", name, text };
     }),
 };
+
+// Build recipe context for chat assistant
+const ingredientLines = data.ingredients.flatMap((group) => [
+  group.name + ":",
+  ...group.items.map((item) => {
+    const parts = [];
+    if (item.amount > 0) parts.push(String(item.amount));
+    if (item.unit) parts.push(item.unit);
+    parts.push(item.name);
+    return "  - " + parts.join(" ");
+  }),
+]).join("\n");
+
+const recipeContext = `${data.title}
+
+${data.description}
+
+Cuisine: ${data.cuisine} | Difficulty: ${data.difficulty} | Servings: ${data.servings}
+Prep: ${data.prepTime}m | Cook: ${data.cookTime}m | Total: ${data.totalTime}m
+
+Ingredients:
+${ingredientLines}
+
+Full recipe content:
+${recipe.body || ""}`;
 
 // Related recipes: same cuisine or shared tags
 const allRecipes = await getCollection("recipes", ({ data: d }) => d.published && d.slug !== data.slug);
@@ -108,7 +134,30 @@ const related = allRecipes
       </button>
       <span class="text-warm-gray/30">|</span>
       <CookMode client:load />
+      <span class="text-warm-gray/30" id="chat-divider" style="display:none">|</span>
+      <button
+        id="show-chat-btn"
+        style="display:none"
+        onclick="window.__showRecipeChat?.(); this.style.display='none'; document.getElementById('chat-divider').style.display='none';"
+        class="inline-flex items-center gap-1.5 text-sm text-warm-gray hover:text-charcoal transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25z" />
+        </svg>
+        Show Assistant
+      </button>
     </div>
+
+    <script>
+      // Show the "Show Assistant" button if chat was dismissed
+      if (localStorage.getItem("chatDismissed") === "true") {
+        const btn = document.getElementById("show-chat-btn");
+        const divider = document.getElementById("chat-divider");
+        if (btn) btn.style.display = "";
+        if (divider) divider.style.display = "";
+      }
+    </script>
 
     {/* Ingredients */}
     <section id="ingredients" class="mb-10 scroll-mt-20">
@@ -172,4 +221,6 @@ const related = allRecipes
       </div>
     </section>
   )}
+
+  <RecipeChat client:idle recipeContext={recipeContext} />
 </Layout>
