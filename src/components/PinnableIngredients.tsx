@@ -133,11 +133,10 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, [pinned]);
 
-  // Prevent body scroll when sidebar is open on mobile
+  // Prevent body scroll when sidebar is open — only on mobile where backdrop covers content
   useEffect(() => {
-    if (pinned) {
+    if (pinned && window.innerWidth < 768) {
       document.body.style.overflow = "hidden";
-      // Add padding to prevent layout shift from scrollbar disappearing
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     } else {
