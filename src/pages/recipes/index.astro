@@ -3,7 +3,7 @@ import { getCollection } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 import RecipeFilter from "../../components/RecipeFilter";
 
-const recipes = await getCollection("recipes", ({ data }) => data.published);
+const recipes = await getCollection("recipes", ({ data }) => data.published && !data.variantOf);
 
 const recipeData = recipes.map((r) => ({
   title: r.data.title,
