@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export default function CookMode() {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
-  const [steps, setSteps] = useState<string[]>([]);
+  const [stepCount, setStepCount] = useState(0);
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
+  const stepContainerRef = useRef<HTMLDivElement>(null);
+  const stepNodesRef = useRef<Node[]>([]);
 
   const enter = useCallback(() => {
-    // Read step cards from the DOM
+    // Clone step card DOM nodes (preserves React event handlers)
     const cards = document.querySelectorAll("#recipe-body .step-card");
     if (cards.length === 0) return;
-    const html = Array.from(cards).map((card) => card.innerHTML);
-    setSteps(html);
+    stepNodesRef.current = Array.from(cards).map((card) => card.cloneNode(true));
+    setStepCount(cards.length);
     setStep(0);
     setActive(true);
     document.body.style.overflow = "hidden";
@@ -20,8 +22,58 @@ export default function CookMode() {
   const exit = useCallback(() => {
     setActive(false);
     setStep(0);
+    stepNodesRef.current = [];
     document.body.style.overflow = "";
   }, []);
+
+  // Render the current step's cloned DOM node and wire up timer buttons
+  useEffect(() => {
+    if (!active || !stepContainerRef.current) return;
+    const container = stepContainerRef.current;
+    container.innerHTML = "";
+    const node = stepNodesRef.current[step];
+    if (node) {
+      const clone = node.cloneNode(true) as HTMLElement;
+      container.appendChild(clone);
+
+      // Wire up timer buttons in the cloned content
+      clone.querySelectorAll("button").forEach((btn) => {
+        const text = btn.textContent || "";
+        const match = text.match(/(\d+(?:\.\d+)?)\s*min/);
+        if (!match) return;
+
+        const minutes = parseFloat(match[1]);
+        const label = text.replace(/\s*—\s*\d+(?:\.\d+)?\s*min/, "").trim();
+        const storageKey = `timer_${label || ""}_${minutes}`;
+
+        btn.addEventListener("click", () => {
+          const endTime = Date.now() + minutes * 60 * 1000;
+          localStorage.setItem(storageKey, endTime.toString());
+          btn.textContent = `${label ? label + " — " : ""}Started!`;
+          btn.classList.add("opacity-60");
+          btn.disabled = true;
+
+          if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+          }
+        });
+
+        // Check if this timer is already running
+        const existing = localStorage.getItem(storageKey);
+        if (existing) {
+          const endTime = parseInt(existing, 10);
+          if (Date.now() < endTime) {
+            const left = Math.ceil((endTime - Date.now()) / 1000);
+            const m = Math.floor(left / 60);
+            const s = left % 60;
+            btn.textContent = `${label ? label + " — " : ""}${m}:${s.toString().padStart(2, "0")} remaining`;
+            btn.classList.add("opacity-60");
+            btn.disabled = true;
+          }
+        }
+      });
+    }
+  }, [active, step]);
 
   // Wake lock
   useEffect(() => {
@@ -62,14 +114,14 @@ export default function CookMode() {
     if (!active) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        setStep((s) => Math.min(s + 1, steps.length - 1));
+        setStep((s) => Math.min(s + 1, stepCount - 1));
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         setStep((s) => Math.max(s - 1, 0));
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [active, steps.length]);
+  }, [active, stepCount]);
 
   if (!active) {
     return (
@@ -88,7 +140,7 @@ export default function CookMode() {
     );
   }
 
-  const isLast = step === steps.length - 1;
+  const isLast = step === stepCount - 1;
 
   return (
     <div className="fixed inset-0 z-50 bg-cream overflow-y-auto">
@@ -99,7 +151,7 @@ export default function CookMode() {
             <span className="font-medium text-terracotta">Cook Mode</span>
             <span>&middot;</span>
             <span>
-              Step {step + 1} of {steps.length}
+              Step {step + 1} of {stepCount}
             </span>
           </div>
           <button
@@ -114,14 +166,14 @@ export default function CookMode() {
         <div className="w-full h-1 bg-warm-gray/15 rounded-full mb-8">
           <div
             className="h-full bg-terracotta rounded-full transition-all duration-300"
-            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+            style={{ width: `${((step + 1) / stepCount) * 100}%` }}
           />
         </div>
 
-        {/* Step content */}
+        {/* Step content — rendered via DOM node cloning */}
         <div
+          ref={stepContainerRef}
           className="recipe-prose text-lg leading-relaxed flex-1"
-          dangerouslySetInnerHTML={{ __html: steps[step] || "" }}
         />
 
         {/* Navigation */}
