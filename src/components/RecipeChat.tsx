@@ -42,10 +42,25 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
       .catch(() => {});
   }, [open, researchUrl]);
 
-  // Auto-scroll to bottom
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Track whether user is at the bottom of the chat
+  const checkScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    setShowScrollBtn(!atBottom);
+  }, []);
+
+  // Check scroll position when messages change
   useEffect(() => {
+    checkScroll();
+  }, [messages, checkScroll]);
+
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  };
 
   // Focus input when opening
   useEffect(() => {
@@ -130,7 +145,7 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
             updated.push({ role: "model", content: "" }); // typing indicator
             return updated;
           });
-        }, 600);
+        }, 1200);
         // Store for cleanup
         dripIntervalRef.current = interval;
       };
@@ -244,7 +259,7 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
 
   // Chat panel (expanded)
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-[350px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-4rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 flex flex-col overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-40 w-[350px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-4rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 flex flex-col overflow-hidden relative">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-gray/10 bg-cream/50">
         <div className="flex items-center gap-2">
@@ -263,7 +278,11 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div
+        ref={scrollContainerRef}
+        onScroll={checkScroll}
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-3 relative"
+      >
         {/* Welcome message */}
         {messages.length === 0 && (
           <div className="bg-sage-light/40 rounded-xl rounded-bl-sm px-3 py-2 text-sm text-charcoal">
@@ -295,6 +314,16 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollBtn && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-16 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-charcoal/80 text-white text-xs shadow-lg hover:bg-charcoal transition-colors"
+        >
+          New messages ↓
+        </button>
+      )}
 
       {/* Input */}
       <div className="px-3 py-3 border-t border-warm-gray/10">
