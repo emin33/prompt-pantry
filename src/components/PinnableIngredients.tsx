@@ -133,21 +133,7 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, [pinned]);
 
-  // Prevent body scroll when sidebar is open — only on mobile where backdrop covers content
-  useEffect(() => {
-    if (pinned && window.innerWidth < 768) {
-      document.body.style.overflow = "hidden";
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    };
-  }, [pinned]);
+  // No body scroll lock — sidebar is a fixed panel, page scrolls freely behind it
 
   return (
     <>
