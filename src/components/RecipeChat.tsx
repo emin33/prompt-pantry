@@ -259,7 +259,7 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
 
   // Chat panel (expanded)
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-[350px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-4rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 flex flex-col overflow-hidden relative">
+    <div className="fixed bottom-6 right-6 z-40 w-[350px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-4rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-gray/10 bg-cream/50">
         <div className="flex items-center gap-2">
@@ -278,10 +278,11 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
       </div>
 
       {/* Messages */}
+      <div className="flex-1 relative overflow-hidden">
       <div
         ref={scrollContainerRef}
         onScroll={checkScroll}
-        className="flex-1 overflow-y-auto px-4 py-3 space-y-3 relative"
+        className="absolute inset-0 overflow-y-auto px-4 py-3 space-y-3"
       >
         {/* Welcome message */}
         {messages.length === 0 && (
@@ -319,11 +320,12 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
       {showScrollBtn && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-16 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-charcoal/80 text-white text-xs shadow-lg hover:bg-charcoal transition-colors"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-charcoal/80 text-white text-xs shadow-lg hover:bg-charcoal transition-colors z-10"
         >
           New messages ↓
         </button>
       )}
+      </div>
 
       {/* Input */}
       <div className="px-3 py-3 border-t border-warm-gray/10">
