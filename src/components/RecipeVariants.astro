@@ -1,0 +1,54 @@
+---
+interface Variant {
+  label: string;
+  slug: string;
+}
+
+interface Props {
+  variants?: Variant[];
+  variantOf?: Variant;
+}
+
+const { variants = [], variantOf } = Astro.props;
+const hasVariants = variants.length > 0;
+const isVariant = !!variantOf;
+
+if (!hasVariants && !isVariant) return;
+---
+
+{/* Variant of banner — shown on the adapted version */}
+{isVariant && (
+  <div class="mb-6 px-4 py-3 rounded-lg bg-sage-light/40 border border-sage/20 text-sm text-warm-gray flex items-center gap-2">
+    <svg class="w-4 h-4 text-sage flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+    </svg>
+    <span>
+      This is the <strong class="text-sage-dark">{variantOf!.label}</strong> version.
+      <a href={`/recipes/${variantOf!.slug}`} class="text-terracotta hover:text-terracotta-dark ml-1">
+        View original recipe &rarr;
+      </a>
+    </span>
+  </div>
+)}
+
+{/* Available variants — shown on the main recipe */}
+{hasVariants && (
+  <div class="mb-6 px-4 py-3 rounded-lg bg-warm-white border border-warm-gray/10 text-sm">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-warm-gray flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Also available:
+      </span>
+      {variants.map((v) => (
+        <a
+          href={`/recipes/${v.slug}`}
+          class="px-3 py-1 rounded-full bg-sage-light text-sage-dark text-xs font-medium hover:bg-sage/20 transition-colors no-underline"
+        >
+          {v.label}
+        </a>
+      ))}
+    </div>
+  </div>
+)}

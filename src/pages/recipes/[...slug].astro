@@ -7,6 +7,7 @@ import PinnableIngredients from "../../components/PinnableIngredients";
 import RecipeCard from "../../components/RecipeCard.astro";
 import CookMode from "../../components/CookMode";
 import RecipeChat from "../../components/RecipeChat";
+import RecipeVariants from "../../components/RecipeVariants.astro";
 
 export async function getStaticPaths() {
   const recipes = await getCollection("recipes", ({ data }) => data.published);
@@ -121,6 +122,8 @@ const related = allRecipes
       imageAspect={data.imageAspect}
     />
 
+    <RecipeVariants variants={data.variants} variantOf={data.variantOf} />
+
     {/* Utility buttons */}
     <div class="no-print mb-8 flex items-center gap-4">
       <button
@@ -222,5 +225,5 @@ const related = allRecipes
     </section>
   )}
 
-  <RecipeChat client:idle recipeContext={recipeContext} />
+  <RecipeChat client:idle recipeContext={recipeContext} researchUrl={data.research} />
 </Layout>
