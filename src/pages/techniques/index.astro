@@ -27,7 +27,7 @@ const categoryOrder = [
 ---
 
 <Layout title="Techniques" description="Cooking technique guides and fundamentals.">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
     <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-2">Techniques</h1>
     <p class="text-warm-gray mb-4">
       The building blocks behind every recipe. Learn a technique once, use it everywhere.
@@ -41,7 +41,7 @@ const categoryOrder = [
           <h2 class="font-display text-xl text-charcoal mb-4 pb-2 border-b border-warm-gray/15">
             {cat}
           </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {grouped[cat]
               .sort((a, b) => a.data.title.localeCompare(b.data.title))
               .map((t) => (
