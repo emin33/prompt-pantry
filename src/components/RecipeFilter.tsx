@@ -77,7 +77,11 @@ export default function RecipeFilter({ recipes }: Props) {
   const [cuisine, setCuisine] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState("");
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("source") || "";
+  });
   const [sort, setSort] = useState<SortOption>("newest");
 
   const cuisines = useMemo(
