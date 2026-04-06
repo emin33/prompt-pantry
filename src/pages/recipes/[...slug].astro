@@ -8,6 +8,7 @@ import RecipeCard from "../../components/RecipeCard.astro";
 import CookMode from "../../components/CookMode";
 import RecipeChat from "../../components/RecipeChat";
 import RecipeVariants from "../../components/RecipeVariants.astro";
+import WakeLock from "../../components/WakeLock";
 
 export async function getStaticPaths() {
   const recipes = await getCollection("recipes", ({ data }) => data.published);
@@ -137,6 +138,8 @@ const related = allRecipes
       </button>
       <span class="text-warm-gray/30">|</span>
       <CookMode client:load />
+      <span class="text-warm-gray/30">|</span>
+      <WakeLock client:load />
       <span class="text-warm-gray/30" id="chat-divider" style="display:none">|</span>
       <button
         id="show-chat-btn"
