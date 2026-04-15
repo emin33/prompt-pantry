@@ -220,11 +220,30 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
       }
     };
 
+    const onScrollToStep = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { step?: number } | undefined;
+      const stepN = Number(detail?.step);
+      if (!stepN || stepN < 1) return;
+      // [...slug].astro wraps each <h3> in #recipe-body in a .step-card div.
+      const cards = document.querySelectorAll<HTMLElement>("#recipe-body .step-card");
+      const target = cards[stepN - 1];
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Brief highlight so the cook sees which step we landed on
+        target.style.transition = "background-color 0.4s ease-out";
+        const prev = target.style.backgroundColor;
+        target.style.backgroundColor = "rgba(212, 168, 83, 0.18)"; // golden tint
+        setTimeout(() => { target.style.backgroundColor = prev; }, 1400);
+      }
+    };
+
     window.addEventListener("sigmond:navigate", onNavigate);
     window.addEventListener("sigmond:scroll_to", onScrollTo);
+    window.addEventListener("sigmond:scroll_to_step", onScrollToStep);
     return () => {
       window.removeEventListener("sigmond:navigate", onNavigate);
       window.removeEventListener("sigmond:scroll_to", onScrollTo);
+      window.removeEventListener("sigmond:scroll_to_step", onScrollToStep);
     };
   }, []);
 
@@ -461,7 +480,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
   // Collapsed — floating bubble at bottom-left (mirror of RecipeChat's pattern)
   if (!expanded) {
     return (
-      <div className="fixed bottom-6 left-6 z-40 group">
+      <div className="fixed bottom-6 left-6 z-[60] group">
         <button
           onClick={dismiss}
           className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warm-gray/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -490,7 +509,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
 
   // Expanded — warm card with video + controls
   return (
-    <div className="fixed bottom-6 left-6 z-40 w-[320px] max-w-[calc(100vw-2rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 overflow-hidden flex flex-col">
+    <div className="fixed bottom-6 left-6 z-[60] w-[320px] max-w-[calc(100vw-2rem)] bg-warm-white rounded-2xl shadow-2xl border border-warm-gray/15 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-gray/10 bg-cream/50">
         <div className="flex items-center gap-2">
