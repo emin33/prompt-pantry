@@ -123,6 +123,25 @@ export default function CookMode() {
     return () => document.removeEventListener("keydown", handler);
   }, [active, stepCount]);
 
+  // Voice-assistant bridge — Sigmond can drive cook mode via window events
+  useEffect(() => {
+    const onSigmondCookMode = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { action?: string } | undefined;
+      const action = (detail?.action || "").toLowerCase();
+      if (action === "enter") {
+        if (!active) enter();
+      } else if (action === "exit") {
+        if (active) exit();
+      } else if (action === "next" && active) {
+        setStep((s) => Math.min(s + 1, stepCount - 1));
+      } else if (action === "prev" && active) {
+        setStep((s) => Math.max(s - 1, 0));
+      }
+    };
+    window.addEventListener("sigmond:cook_mode", onSigmondCookMode);
+    return () => window.removeEventListener("sigmond:cook_mode", onSigmondCookMode);
+  }, [active, stepCount, enter, exit]);
+
   if (!active) {
     return (
       <button

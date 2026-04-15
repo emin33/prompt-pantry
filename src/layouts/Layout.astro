@@ -1,7 +1,9 @@
 ---
 import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import SigmondWidget from "../components/SigmondWidget";
 
 interface Props {
   title: string;
@@ -22,6 +24,11 @@ const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
 const ogImageUrl = ogImage
   ? `https://promptpantry.org${ogImage}`
   : "https://promptpantry.org/images/og-image.png";
+
+// Agent URL injected at build time. In dev, point this at your ngrok URL
+// (or localhost if you've proxied it). Example:
+//   PUBLIC_SIGMOND_AGENT_URL=https://abcd1234.ngrok-free.app
+const agentUrl = import.meta.env.PUBLIC_SIGMOND_AGENT_URL ?? "";
 ---
 
 <!doctype html>
@@ -49,6 +56,9 @@ const ogImageUrl = ogImage
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display&display=swap"
       rel="stylesheet"
     />
+    <!-- SignalWire browser SDK — UMD build exposes window.SignalWire -->
+    <script src="https://cdn.signalwire.com/@signalwire/js@latest/dist/index.umd.js" is:inline></script>
+    <ClientRouter />
   </head>
   <body class="min-h-screen flex flex-col">
     <!-- Paper texture SVG filter -->
@@ -63,5 +73,7 @@ const ogImageUrl = ogImage
       <slot />
     </main>
     <Footer />
+    <!-- Sigmond voice assistant. Persists across client-side navigations. -->
+    <SigmondWidget client:load transition:persist="sigmond" agentUrl={agentUrl} />
   </body>
 </html>

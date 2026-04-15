@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, type ReactNode } from "react";
+import { useEffect, useState, createContext, useContext, type ReactNode } from "react";
 
 interface ScalerContextValue {
   scale: number;
@@ -27,6 +27,24 @@ export function ScalerProvider({
 }) {
   const [servings, setServings] = useState(baseServings);
   const scale = servings / baseServings;
+
+  // Voice-assistant bridge — Sigmond can scale/reset servings via window events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { action?: string; value?: number }
+        | undefined;
+      const action = (detail?.action || "").toLowerCase();
+      if (action === "scale") {
+        const v = Number(detail?.value);
+        if (Number.isFinite(v) && v >= 1 && v <= 99) setServings(Math.round(v));
+      } else if (action === "reset") {
+        setServings(baseServings);
+      }
+    };
+    window.addEventListener("sigmond:servings", handler);
+    return () => window.removeEventListener("sigmond:servings", handler);
+  }, [baseServings]);
 
   return (
     <ScalerContext.Provider value={{ scale, servings, baseServings, setServings }}>

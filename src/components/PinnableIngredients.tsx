@@ -133,6 +133,18 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, [pinned]);
 
+  // Voice-assistant bridge — Sigmond can pin/unpin via window events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { action?: string } | undefined;
+      const action = (detail?.action || "").toLowerCase();
+      if (action === "pin") setPinned(true);
+      else if (action === "unpin") setPinned(false);
+    };
+    window.addEventListener("sigmond:servings", handler);
+    return () => window.removeEventListener("sigmond:servings", handler);
+  }, []);
+
   // No body scroll lock — sidebar is a fixed panel, page scrolls freely behind it
 
   return (

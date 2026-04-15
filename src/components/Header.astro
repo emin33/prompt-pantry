@@ -30,6 +30,18 @@ const navLinks = [
           </a>
         </li>
       ))}
+      <li>
+        <button
+          type="button"
+          onclick="window.__sigmondWake?.()"
+          class="inline-flex items-center gap-1.5 text-muted hover:text-charcoal transition-colors"
+          title="Talk to Sigmond"
+          aria-label="Talk to Sigmond"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-sage animate-pulse"></span>
+          Sigmond
+        </button>
+      </li>
     </ul>
   </nav>
 </header>
