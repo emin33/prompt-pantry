@@ -133,7 +133,7 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, [pinned]);
 
-  // Voice-assistant bridge — Sigmond can pin/unpin via window events
+  // Voice-assistant bridge — Chef Carl can pin/unpin via window events
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as { action?: string } | undefined;
@@ -141,8 +141,8 @@ function IngredientsWithSidebar({ servings, groups }: Props) {
       if (action === "pin") setPinned(true);
       else if (action === "unpin") setPinned(false);
     };
-    window.addEventListener("sigmond:servings", handler);
-    return () => window.removeEventListener("sigmond:servings", handler);
+    window.addEventListener("carl:servings", handler);
+    return () => window.removeEventListener("carl:servings", handler);
   }, []);
 
   // No body scroll lock — sidebar is a fixed panel, page scrolls freely behind it

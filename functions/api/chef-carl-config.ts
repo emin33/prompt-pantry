@@ -1,5 +1,5 @@
 /**
- * Runtime config endpoint for the Sigmond widget.
+ * Runtime config endpoint for the Chef Carl widget.
  *
  * Returns the agent URL from the Pages Function's env binding, which Cloudflare
  * populates at runtime from the dashboard's Variables and Secrets. This works
@@ -12,13 +12,13 @@
  */
 
 interface Env {
-  PUBLIC_SIGMOND_AGENT_URL?: string;
+  PUBLIC_CARL_AGENT_URL?: string;
 }
 
 export const onRequestGet: PagesFunction<Env> = ({ env }) => {
   return new Response(
     JSON.stringify({
-      agentUrl: env.PUBLIC_SIGMOND_AGENT_URL || "",
+      agentUrl: env.PUBLIC_CARL_AGENT_URL || "",
     }),
     {
       headers: {

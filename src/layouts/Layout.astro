@@ -3,7 +3,7 @@ import "../styles/global.css";
 import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import SigmondWidget from "../components/SigmondWidget";
+import ChefCarlWidget from "../components/ChefCarlWidget";
 
 interface Props {
   title: string;
@@ -27,16 +27,16 @@ const ogImageUrl = ogImage
 
 // Agent URL injected at build time. In dev, point this at your ngrok URL
 // (or localhost if you've proxied it). Example:
-//   PUBLIC_SIGMOND_AGENT_URL=https://abcd1234.ngrok-free.app
-const agentUrl = import.meta.env.PUBLIC_SIGMOND_AGENT_URL ?? "";
+//   PUBLIC_CARL_AGENT_URL=https://abcd1234.ngrok-free.app
+const agentUrl = import.meta.env.PUBLIC_CARL_AGENT_URL ?? "";
 
 // Build-time diagnostic: dumps everything relevant so we can tell at a glance
 // whether Cloudflare/Astro actually read the env var during the build.
-// View page source, search "sigmond-build-diag". Remove once confirmed working.
+// View page source, search "carl-build-diag". Remove once confirmed working.
 const _buildDiag = {
   agentUrl,
   present: Boolean(agentUrl),
-  rawEnvType: typeof import.meta.env.PUBLIC_SIGMOND_AGENT_URL,
+  rawEnvType: typeof import.meta.env.PUBLIC_CARL_AGENT_URL,
   allPublicKeys: Object.keys(import.meta.env)
     .filter((k) => k.startsWith("PUBLIC_"))
     .join(","),
@@ -62,7 +62,7 @@ const _buildDiag = {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={ogImageUrl} />
     <title>{fullTitle}</title>
-    <meta name="sigmond-build-diag" content={JSON.stringify(_buildDiag)} />
+    <meta name="carl-build-diag" content={JSON.stringify(_buildDiag)} />
     <slot name="head" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -89,7 +89,7 @@ const _buildDiag = {
       <slot />
     </main>
     <Footer />
-    <!-- Sigmond voice assistant. Persists across client-side navigations. -->
-    <SigmondWidget client:load transition:persist="sigmond" agentUrl={agentUrl} />
+    <!-- Chef Carl voice assistant. Persists across client-side navigations. -->
+    <ChefCarlWidget client:load transition:persist="carl" agentUrl={agentUrl} />
   </body>
 </html>

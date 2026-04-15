@@ -7,8 +7,8 @@ declare global {
       SignalWire?: (opts: { token: string; logLevel?: string }) => Promise<SignalWireClient>;
       Fabric?: (opts: { token: string; logLevel?: string }) => Promise<SignalWireClient>;
     };
-    __sigmondShow?: () => void;
-    __sigmondWake?: () => void;
+    __carlShow?: () => void;
+    __carlWake?: () => void;
   }
 }
 
@@ -39,26 +39,26 @@ interface Props {
 
 type Status = "idle" | "connecting" | "connected" | "error";
 
-interface SigmondEvent {
+interface ChefCarlEvent {
   type?: string;
   [key: string]: unknown;
 }
 
-const LS_DISMISSED = "sigmond_dismissed";
+const LS_DISMISSED = "carl_dismissed";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pull a useful event payload out of whatever shape the SDK hands us.
 // SDK sometimes wraps the event as {event: {...}}, sometimes {params: {...}},
 // sometimes raw. Filter out internal SDK lifecycle events (no `type` field).
 // ─────────────────────────────────────────────────────────────────────────────
-function extractEvent(params: unknown): SigmondEvent | null {
+function extractEvent(params: unknown): ChefCarlEvent | null {
   if (!params || typeof params !== "object") return null;
   const p = params as Record<string, unknown>;
   let data: Record<string, unknown> = p;
   if (p.params && typeof p.params === "object") data = p.params as Record<string, unknown>;
   if (p.event && typeof p.event === "object") data = p.event as Record<string, unknown>;
   if (typeof data.type !== "string") return null;
-  return data as SigmondEvent;
+  return data as ChefCarlEvent;
 }
 
 // Read the current recipe context from the DOM so the agent can see which page
@@ -77,10 +77,10 @@ function readPageState() {
   };
 }
 
-export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
-  // agentUrl resolution: prop (build-time inlined PUBLIC_SIGMOND_AGENT_URL) is
+export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
+  // agentUrl resolution: prop (build-time inlined PUBLIC_CARL_AGENT_URL) is
   // the fast path. If empty (Cloudflare's build env doesn't always expose
-  // PUBLIC_* to static builds), fall back to /api/sigmond-config which reads
+  // PUBLIC_* to static builds), fall back to /api/chef-carl-config which reads
   // the var from the Pages Function runtime env — different code path that
   // Cloudflare reliably populates.
   const [resolvedAgentUrl, setResolvedAgentUrl] = useState<string>(
@@ -91,7 +91,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
     if (resolvedAgentUrl) return;
     (async () => {
       try {
-        const r = await fetch("/api/sigmond-config");
+        const r = await fetch("/api/chef-carl-config");
         if (!r.ok) return;
         const j = (await r.json()) as { agentUrl?: string };
         if (j.agentUrl) setResolvedAgentUrl(j.agentUrl.replace(/\/$/, ""));
@@ -147,7 +147,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
   const handleUserEvent = useCallback((params: unknown) => {
     const ev = extractEvent(params);
     if (!ev || !ev.type) return;
-    // Forward to the page. Existing components listen for "sigmond:*" events.
+    // Forward to the page. Existing components listen for "carl:*" events.
     window.dispatchEvent(new CustomEvent(ev.type, { detail: ev }));
   }, []);
 
@@ -237,13 +237,13 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
       }
     };
 
-    window.addEventListener("sigmond:navigate", onNavigate);
-    window.addEventListener("sigmond:scroll_to", onScrollTo);
-    window.addEventListener("sigmond:scroll_to_step", onScrollToStep);
+    window.addEventListener("carl:navigate", onNavigate);
+    window.addEventListener("carl:scroll_to", onScrollTo);
+    window.addEventListener("carl:scroll_to_step", onScrollToStep);
     return () => {
-      window.removeEventListener("sigmond:navigate", onNavigate);
-      window.removeEventListener("sigmond:scroll_to", onScrollTo);
-      window.removeEventListener("sigmond:scroll_to_step", onScrollToStep);
+      window.removeEventListener("carl:navigate", onNavigate);
+      window.removeEventListener("carl:scroll_to", onScrollTo);
+      window.removeEventListener("carl:scroll_to_step", onScrollToStep);
     };
   }, []);
 
@@ -271,11 +271,11 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
         return prev.filter((_, i) => i !== idx);
       });
     };
-    window.addEventListener("sigmond:timer_start", onStart);
-    window.addEventListener("sigmond:timer_cancel", onCancel);
+    window.addEventListener("carl:timer_start", onStart);
+    window.addEventListener("carl:timer_cancel", onCancel);
     return () => {
-      window.removeEventListener("sigmond:timer_start", onStart);
-      window.removeEventListener("sigmond:timer_cancel", onCancel);
+      window.removeEventListener("carl:timer_start", onStart);
+      window.removeEventListener("carl:timer_cancel", onCancel);
     };
   }, []);
 
@@ -297,7 +297,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
   const connect = useCallback(async () => {
     if (status !== "idle") return;
     if (!agentUrl) {
-      console.error("Sigmond: PUBLIC_SIGMOND_AGENT_URL not configured");
+      console.error("ChefCarl: PUBLIC_CARL_AGENT_URL not configured");
       setStatus("error");
       return;
     }
@@ -350,7 +350,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
         to: tokenData.address,
         rootElement: videoContainerRef.current,
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: false, // Sigmond sends video; the user's video is not needed for a cooking assistant
+        video: false, // Chef Carl sends video; the user's video is not needed for a cooking assistant
         negotiateVideo: true,
         userVariables: {
           interface: "prompt-pantry-web",
@@ -377,29 +377,29 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
 
       await room.start();
     } catch (err) {
-      console.error("Sigmond connect error:", err);
+      console.error("Chef Carl connect error:", err);
       setStatus("error");
       setTimeout(() => setStatus("idle"), 2000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentUrl, handleUserEvent, pushPageState, status]);
 
-  // ─── global wake handler (window.__sigmondWake) ───────────────────────────
+  // ─── global wake handler (window.__carlWake) ───────────────────────────
   // MUST live AFTER `connect` is defined so it can be in the dep array. If
   // this lived earlier in the component, putting `connect` in deps would
   // throw a TDZ ReferenceError at render. Including connect here ensures the
   // global handler always points to the *latest* connect — critical because
-  // agentUrl resolves asynchronously from /api/sigmond-config, and an early
+  // agentUrl resolves asynchronously from /api/chef-carl-config, and an early
   // closure would capture an empty URL forever.
   useEffect(() => {
-    window.__sigmondShow = undismiss;
-    window.__sigmondWake = () => {
+    window.__carlShow = undismiss;
+    window.__carlWake = () => {
       undismiss();
       if (status === "idle") void connect();
     };
     return () => {
-      delete window.__sigmondShow;
-      delete window.__sigmondWake;
+      delete window.__carlShow;
+      delete window.__carlWake;
     };
   }, [undismiss, status, connect]);
 
@@ -484,7 +484,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
         <button
           onClick={dismiss}
           className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warm-gray/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Dismiss Sigmond"
+          aria-label="Dismiss Chef Carl"
         >
           ×
         </button>
@@ -494,8 +494,8 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
             if (status === "idle") void connect();
           }}
           className="w-12 h-12 rounded-full bg-sage text-white shadow-lg hover:bg-sage-dark hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
-          aria-label="Wake Sigmond"
-          title="Wake Sigmond"
+          aria-label="Wake Chef Carl"
+          title="Wake Chef Carl"
         >
           {/* Small chef/spoon mark — inline SVG, matches site's icon weight */}
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
@@ -527,7 +527,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
             aria-hidden
           />
           <span className="font-display text-base text-charcoal leading-none">
-            Sigmond
+            Chef Carl
           </span>
           {status === "connected" && durationLabel && (
             <span className="text-xs text-muted tabular-nums ml-1">{durationLabel}</span>
@@ -539,7 +539,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
             setExpanded(false);
           }}
           className="w-7 h-7 rounded-full flex items-center justify-center text-muted hover:text-charcoal hover:bg-cream transition-colors"
-          aria-label="Minimize Sigmond"
+          aria-label="Minimize Chef Carl"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7-7-7" />
@@ -567,7 +567,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
             )}
             {status === "error" && (
               <div className="text-center text-cream/80 px-4">
-                <div className="text-sm mb-1">Couldn't reach Sigmond</div>
+                <div className="text-sm mb-1">Couldn't reach Chef Carl</div>
                 <div className="text-xs text-cream/60">
                   Check the agent is running and reachable.
                 </div>
@@ -643,14 +643,14 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
         ) : (
           <div className="flex items-center justify-between w-full">
             <span className="text-xs text-muted">
-              Tap wake to talk with Sigmond
+              Tap wake to talk with Chef Carl
             </span>
             <button
               onClick={() => void connect()}
               disabled={status === "error"}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sage text-white text-xs font-medium hover:bg-sage-dark disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
             >
-              Wake Sigmond
+              Wake Chef Carl
             </button>
           </div>
         )}

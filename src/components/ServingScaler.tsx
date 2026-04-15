@@ -28,7 +28,7 @@ export function ScalerProvider({
   const [servings, setServings] = useState(baseServings);
   const scale = servings / baseServings;
 
-  // Voice-assistant bridge — Sigmond can scale/reset servings via window events
+  // Voice-assistant bridge — Chef Carl can scale/reset servings via window events
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as
@@ -42,8 +42,8 @@ export function ScalerProvider({
         setServings(baseServings);
       }
     };
-    window.addEventListener("sigmond:servings", handler);
-    return () => window.removeEventListener("sigmond:servings", handler);
+    window.addEventListener("carl:servings", handler);
+    return () => window.removeEventListener("carl:servings", handler);
   }, [baseServings]);
 
   return (

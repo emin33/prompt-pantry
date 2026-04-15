@@ -123,9 +123,9 @@ export default function CookMode() {
     return () => document.removeEventListener("keydown", handler);
   }, [active, stepCount]);
 
-  // Voice-assistant bridge — Sigmond can drive cook mode via window events
+  // Voice-assistant bridge — Chef Carl can drive cook mode via window events
   useEffect(() => {
-    const onSigmondCookMode = (e: Event) => {
+    const onChefCarlCookMode = (e: Event) => {
       const detail = (e as CustomEvent).detail as { action?: string } | undefined;
       const action = (detail?.action || "").toLowerCase();
       if (action === "enter") {
@@ -138,8 +138,8 @@ export default function CookMode() {
         setStep((s) => Math.max(s - 1, 0));
       }
     };
-    window.addEventListener("sigmond:cook_mode", onSigmondCookMode);
-    return () => window.removeEventListener("sigmond:cook_mode", onSigmondCookMode);
+    window.addEventListener("carl:cook_mode", onChefCarlCookMode);
+    return () => window.removeEventListener("carl:cook_mode", onChefCarlCookMode);
   }, [active, stepCount, enter, exit]);
 
   if (!active) {
