@@ -148,6 +148,41 @@ export default function StepTimer({ minutes, label }: Props) {
     setRemaining(totalSeconds);
   };
 
+  // Voice-assistant bridge — Chef Carl can start this specific step's timer
+  // when the cook says "start the noodle timer" / "set the sauce simmer".
+  // Match by label first (substring, case-insensitive); fall back to minutes
+  // if no label provided. Whichever StepTimer claims the event calls
+  // preventDefault so the floating widget timer doesn't show a duplicate.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (e.defaultPrevented) return;
+      if (state !== "idle") return; // already running or done — don't re-claim
+      const detail = (e as CustomEvent).detail as
+        | { minutes?: number; label?: string }
+        | undefined;
+      const evMinutes = Number(detail?.minutes);
+      const evLabel = (detail?.label || "").toLowerCase().trim();
+      const myLabel = (label || "").toLowerCase().trim();
+
+      let matched = false;
+      if (evLabel && myLabel) {
+        // Substring either direction so "noodle" matches "noodle soak" and vice versa
+        matched = evLabel.includes(myLabel) || myLabel.includes(evLabel);
+      } else if (!evLabel && evMinutes && Math.abs(evMinutes - minutes) < 0.5) {
+        // No label — only match if the duration is unique enough
+        matched = true;
+      }
+
+      if (matched) {
+        e.preventDefault();
+        start();
+      }
+    };
+    window.addEventListener("carl:timer_start", handler);
+    return () => window.removeEventListener("carl:timer_start", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, label, minutes]);
+
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const progress = 1 - remaining / totalSeconds;

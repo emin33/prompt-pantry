@@ -147,8 +147,10 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
   const handleUserEvent = useCallback((params: unknown) => {
     const ev = extractEvent(params);
     if (!ev || !ev.type) return;
-    // Forward to the page. Existing components listen for "carl:*" events.
-    window.dispatchEvent(new CustomEvent(ev.type, { detail: ev }));
+    // Forward to the page. Cancelable so on-page components (e.g. a matching
+    // StepTimer) can claim an event with preventDefault, telling other
+    // listeners (the floating widget timer) to skip showing a duplicate.
+    window.dispatchEvent(new CustomEvent(ev.type, { detail: ev, cancelable: true }));
   }, []);
 
   // ─── page → agent state channel ────────────────────────────────────────────
@@ -228,7 +230,13 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
       const cards = document.querySelectorAll<HTMLElement>("#recipe-body .step-card");
       const target = cards[stepN - 1];
       if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        // The site header is sticky (h-16 = 64px). Manual scroll with offset
+        // so the step heading sits clearly below the header instead of being
+        // clipped underneath. scrollIntoView({block:"start"}) doesn't account
+        // for sticky headers.
+        const headerOffset = 80; // 64px header + 16px breathing room
+        const elementTop = target.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: elementTop - headerOffset, behavior: "smooth" });
         // Brief highlight so the cook sees which step we landed on
         target.style.transition = "background-color 0.4s ease-out";
         const prev = target.style.backgroundColor;
@@ -251,6 +259,9 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
   useEffect(() => {
     let nextId = 1;
     const onStart = (e: Event) => {
+      // If an on-page StepTimer matched and started itself, it called
+      // preventDefault — skip showing a duplicate floating timer in the widget.
+      if (e.defaultPrevented) return;
       const detail = (e as CustomEvent).detail as
         | { minutes?: number; label?: string }
         | undefined;
