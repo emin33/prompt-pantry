@@ -78,7 +78,30 @@ function readPageState() {
 }
 
 export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
-  const agentUrl = (agentUrlProp || "").replace(/\/$/, "");
+  // agentUrl resolution: prop (build-time inlined PUBLIC_SIGMOND_AGENT_URL) is
+  // the fast path. If empty (Cloudflare's build env doesn't always expose
+  // PUBLIC_* to static builds), fall back to /api/sigmond-config which reads
+  // the var from the Pages Function runtime env — different code path that
+  // Cloudflare reliably populates.
+  const [resolvedAgentUrl, setResolvedAgentUrl] = useState<string>(
+    (agentUrlProp || "").replace(/\/$/, ""),
+  );
+
+  useEffect(() => {
+    if (resolvedAgentUrl) return;
+    (async () => {
+      try {
+        const r = await fetch("/api/sigmond-config");
+        if (!r.ok) return;
+        const j = (await r.json()) as { agentUrl?: string };
+        if (j.agentUrl) setResolvedAgentUrl(j.agentUrl.replace(/\/$/, ""));
+      } catch {
+        // Non-fatal; connect() will log a clearer error when clicked.
+      }
+    })();
+  }, [resolvedAgentUrl]);
+
+  const agentUrl = resolvedAgentUrl;
 
   const [status, setStatus] = useState<Status>("idle");
   const [expanded, setExpanded] = useState(false);
