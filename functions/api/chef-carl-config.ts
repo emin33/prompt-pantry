@@ -13,12 +13,15 @@
 
 interface Env {
   PUBLIC_CARL_AGENT_URL?: string;
+  // Pre-rebrand var name; kept as a fallback so the dashboard config
+  // doesn't need to be touched in lockstep with the rename.
+  PUBLIC_SIGMOND_AGENT_URL?: string;
 }
 
 export const onRequestGet: PagesFunction<Env> = ({ env }) => {
   return new Response(
     JSON.stringify({
-      agentUrl: env.PUBLIC_CARL_AGENT_URL || "",
+      agentUrl: env.PUBLIC_CARL_AGENT_URL || env.PUBLIC_SIGMOND_AGENT_URL || "",
     }),
     {
       headers: {
