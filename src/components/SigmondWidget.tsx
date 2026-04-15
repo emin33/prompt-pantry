@@ -143,12 +143,20 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
   }, []);
 
   // ─── page → agent state channel ────────────────────────────────────────────
+  // `ngrok-skip-browser-warning` bypasses ngrok's free-tier HTML interstitial
+  // that otherwise intercepts the first request from a new browser session
+  // and makes fetch() get HTML instead of JSON. Harmless against any other
+  // host (Cloudflare tunnel, prod deploy, etc.).
+  const AGENT_HEADERS: Record<string, string> = {
+    "ngrok-skip-browser-warning": "true",
+  };
+
   const pushPageState = useCallback(async () => {
     if (!agentUrl || !callIdRef.current) return;
     try {
       await fetch(`${agentUrl}/page_state`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...AGENT_HEADERS, "Content-Type": "application/json" },
         body: JSON.stringify({
           call_id: callIdRef.current,
           state: readPageState(),
@@ -157,6 +165,7 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
     } catch {
       // Non-fatal — agent will have slightly stale context for one turn
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentUrl]);
 
   // Fire pushPageState on Astro page transitions.
@@ -269,7 +278,17 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
 
     try {
       // 1) Token
-      const tokenResp = await fetch(`${agentUrl}/get_token`);
+      const tokenResp = await fetch(`${agentUrl}/get_token`, {
+        headers: AGENT_HEADERS,
+      });
+      const contentType = tokenResp.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        // Almost always ngrok's browser-warning HTML. Surface a clear error.
+        const preview = (await tokenResp.text()).slice(0, 200);
+        throw new Error(
+          `Agent returned non-JSON (status ${tokenResp.status}). First 200 chars: ${preview}`,
+        );
+      }
       const tokenData = (await tokenResp.json()) as {
         token?: string;
         address?: string;
