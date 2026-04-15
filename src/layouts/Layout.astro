@@ -56,8 +56,10 @@ const agentUrl = import.meta.env.PUBLIC_SIGMOND_AGENT_URL ?? "";
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display&display=swap"
       rel="stylesheet"
     />
-    <!-- SignalWire browser SDK — UMD build exposes window.SignalWire -->
-    <script src="https://cdn.signalwire.com/@signalwire/js@latest/dist/index.umd.js" is:inline></script>
+    <!-- SignalWire browser SDK (UMD — exposes window.SignalWire). Served
+         locally from public/ rather than a CDN so we get a known-good
+         version and no external runtime dependency. -->
+    <script src="/signalwire.js" is:inline></script>
     <ClientRouter />
   </head>
   <body class="min-h-screen flex flex-col">
