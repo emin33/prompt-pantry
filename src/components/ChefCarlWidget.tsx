@@ -65,8 +65,12 @@ function extractEvent(params: unknown): ChefCarlEvent | null {
 // the cook is on. Recipes expose a slug via the URL path; title is in <title>.
 function readPageState() {
   const path = window.location.pathname;
-  const recipeMatch = path.match(/^\/recipes\/([^/]+)$/);
-  const techniqueMatch = path.match(/^\/techniques\/([^/]+)$/);
+  // Accept optional trailing slash — Astro serves /recipes/<slug>/ with one.
+  // Without `\/?`, a real URL like /recipes/jamaican-jerk-chicken/ misses the
+  // match and the agent never gets the slug → no recipe block, no on-page
+  // timer list, Carl can't drive step-specific actions.
+  const recipeMatch = path.match(/^\/recipes\/([^/]+)\/?$/);
+  const techniqueMatch = path.match(/^\/techniques\/([^/]+)\/?$/);
   return {
     current_page_path: path,
     current_recipe_slug: recipeMatch ? recipeMatch[1] : "",
