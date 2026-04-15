@@ -126,20 +126,6 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
     setDismissed(false);
   }, []);
 
-  useEffect(() => {
-    window.__sigmondShow = undismiss;
-    window.__sigmondWake = () => {
-      undismiss();
-      // If not yet connected, kick off the call
-      if (status === "idle") void connect();
-    };
-    return () => {
-      delete window.__sigmondShow;
-      delete window.__sigmondWake;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [undismiss, status]);
-
   // ─── call-duration ticker ──────────────────────────────────────────────────
   useEffect(() => {
     if (status !== "connected" || callStart === null) return;
@@ -378,6 +364,25 @@ export default function SigmondWidget({ agentUrl: agentUrlProp }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentUrl, handleUserEvent, pushPageState, status]);
+
+  // ─── global wake handler (window.__sigmondWake) ───────────────────────────
+  // MUST live AFTER `connect` is defined so it can be in the dep array. If
+  // this lived earlier in the component, putting `connect` in deps would
+  // throw a TDZ ReferenceError at render. Including connect here ensures the
+  // global handler always points to the *latest* connect — critical because
+  // agentUrl resolves asynchronously from /api/sigmond-config, and an early
+  // closure would capture an empty URL forever.
+  useEffect(() => {
+    window.__sigmondShow = undismiss;
+    window.__sigmondWake = () => {
+      undismiss();
+      if (status === "idle") void connect();
+    };
+    return () => {
+      delete window.__sigmondShow;
+      delete window.__sigmondWake;
+    };
+  }, [undismiss, status, connect]);
 
   const handleDisconnect = useCallback(() => {
     setStatus("idle");
