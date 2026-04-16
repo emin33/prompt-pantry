@@ -17,19 +17,17 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
-// Normalize a password for voice-tolerant comparison. STT artifacts we care
-// about: trailing punctuation ("pantry flour."), ALL-CAPS from some engines,
-// stray whitespace from trimming. We intentionally DO NOT strip interior
-// spaces — "pantry flour" stays two words, since multi-word passwords are
-// fine. Case-insensitive because voice recognition's capitalization is noise.
+// Normalize a password for voice-tolerant comparison. Aggressive: lowercase
+// and strip everything that isn't a-z / 0-9. This is the fallback path;
+// byte-exact compare runs first and handles normal typed-into-the-form
+// submissions. The normalize path only matters when STT produces something
+// that doesn't byte-match but should semantically — e.g. "Pantry Flour.",
+// "pantry flour", or "pantry-flour" all reduce to "pantryflour", and if
+// any of those is the stored form, they'll match. Side effect: makes the
+// password effectively case/punctuation/whitespace-blind, which is fine
+// because the gate protects spend (Gemini calls) and not PII.
 function normalizeForVoice(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    // Strip common trailing punctuation STT adds
-    .replace(/[.,!?;:]+$/, "")
-    // Collapse runs of whitespace to a single space so "pantry  flour" matches "pantry flour"
-    .replace(/\s+/g, " ");
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 const ALLOWED_ORIGIN = "https://promptpantry.org";
