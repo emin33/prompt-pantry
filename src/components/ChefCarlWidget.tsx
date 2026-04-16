@@ -307,13 +307,77 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
       }
     };
 
+    // ─── generator handoff: Carl triggers, widget drives the existing SSE flow ─
+    // Event payload (agent side): { dish, difficulty, servings, dietary, jwt,
+    // jwt_expires_at }. We stash it in sessionStorage so RecipeGenerator on
+    // the /generate page can hydrate its state and kick off the SSE request
+    // without asking the user for a password again.
+    const onStartGeneration = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | {
+            dish?: string;
+            difficulty?: string;
+            servings?: number;
+            dietary?: string;
+            jwt?: string;
+            jwt_expires_at?: number;
+          }
+        | undefined;
+      if (!detail?.dish || !detail?.jwt) return;
+      try {
+        sessionStorage.setItem(
+          "carl-generation",
+          JSON.stringify({
+            dish: detail.dish,
+            difficulty: detail.difficulty || "Medium",
+            servings: Number(detail.servings) || 4,
+            dietary: detail.dietary || "",
+            jwt: detail.jwt,
+            jwt_expires_at: Number(detail.jwt_expires_at) || 0,
+            // RecipeGenerator uses these to POST /generator_notify
+            // when the SSE flow finishes (success, failure, or publish).
+            call_id: callIdRef.current,
+            agent_url: agentUrl,
+            widget_token: widgetTokenRef.current || "",
+            ts: Date.now(),
+          }),
+        );
+      } catch {
+        // Quota errors etc. — not worth aborting, just log in dev.
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn("[carl] failed to write generation handoff to sessionStorage");
+        }
+      }
+      // Navigate to the generator page; RecipeGenerator picks it up.
+      import("astro:transitions/client")
+        .then((mod) => {
+          if (typeof mod.navigate === "function") mod.navigate("/generate?fromCarl=1");
+          else window.location.href = "/generate?fromCarl=1";
+        })
+        .catch(() => {
+          window.location.href = "/generate?fromCarl=1";
+        });
+    };
+
+    // Carl told us to publish. Relay as a window event that RecipeGenerator
+    // listens for (it has the recipe state + JWT in React state and knows
+    // how to run the existing publish flow).
+    const onPublishRequest = (_e: Event) => {
+      window.dispatchEvent(new CustomEvent("pp:publish-from-carl", { detail: {} }));
+    };
+
     window.addEventListener("carl:navigate", onNavigate);
     window.addEventListener("carl:scroll_to", onScrollTo);
     window.addEventListener("carl:scroll_to_step", onScrollToStep);
+    window.addEventListener("carl:start_generation", onStartGeneration);
+    window.addEventListener("carl:publish_request", onPublishRequest);
     return () => {
       window.removeEventListener("carl:navigate", onNavigate);
       window.removeEventListener("carl:scroll_to", onScrollTo);
       window.removeEventListener("carl:scroll_to_step", onScrollToStep);
+      window.removeEventListener("carl:start_generation", onStartGeneration);
+      window.removeEventListener("carl:publish_request", onPublishRequest);
     };
   }, []);
 

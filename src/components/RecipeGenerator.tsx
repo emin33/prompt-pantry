@@ -1,7 +1,39 @@
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GeneratorForm, { type GeneratorInput } from "./GeneratorForm";
 import GeneratorProgress from "./GeneratorProgress";
 import RecipePreview from "./RecipePreview";
+
+// Default cookware list duplicated from GeneratorForm so we can build a
+// full GeneratorInput when Carl hands off — he doesn't collect cookware.
+const CARL_DEFAULT_COOKWARE = [
+  "Stainless steel skillet",
+  "Cast iron skillet",
+  "Non-stick pan",
+  "Dutch oven",
+  "Sheet pan",
+  "Instant Pot / pressure cooker",
+  "Wok",
+  "Grill",
+  "Stand mixer",
+  "Food processor",
+  "Immersion blender",
+];
+
+// Shape of the sessionStorage handoff written by ChefCarlWidget when
+// Carl fires carl:start_generation. Kept loose; anything missing falls
+// back to a form-equivalent default.
+interface CarlHandoff {
+  dish: string;
+  difficulty?: string;
+  servings?: number;
+  dietary?: string;
+  jwt: string;
+  jwt_expires_at?: number;
+  call_id?: string;
+  agent_url?: string;
+  widget_token?: string;
+  ts?: number;
+}
 
 type State = "idle" | "generating" | "preview" | "publishing" | "deploying" | "published";
 
@@ -35,6 +67,32 @@ export default function RecipeGenerator() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
   const [jwtToken, setJwtToken] = useState<string | null>(null);
+  // Handoff context from Carl (call_id + agent_url + widget_token) so we
+  // can POST /generator_notify when the flow terminates. Not stored in
+  // React state because it never needs to trigger a re-render.
+  const carlHandoffRef = useRef<CarlHandoff | null>(null);
+
+  const notifyCarl = useCallback(
+    async (event: string, payload: Record<string, string>) => {
+      const handoff = carlHandoffRef.current;
+      if (!handoff?.agent_url || !handoff?.call_id) return;
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (handoff.widget_token) headers["X-Pantry-Token"] = handoff.widget_token;
+        await fetch(`${handoff.agent_url.replace(/\/$/, "")}/generator_notify`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ call_id: handoff.call_id, event, ...payload }),
+        });
+      } catch {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn("[recipe-generator] failed to notify Carl:", event);
+        }
+      }
+    },
+    [],
+  );
 
   const pollUntilLive = useCallback(async (slug: string, title: string) => {
     const url = `/recipes/${slug}/`;
@@ -175,14 +233,21 @@ export default function RecipeGenerator() {
       // Show preview after generation
       if (receivedRecipe) {
         setState("preview");
+        // Tell Carl the recipe is ready so he can narrate it to the cook.
+        // receivedRecipe is the most recent "recipe" SSE event payload.
+        void notifyCarl("generation_complete", {
+          title: (receivedRecipe as { title?: string })?.title || "",
+          slug: (receivedRecipe as { slug?: string })?.slug || "",
+        });
       }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unknown error occurred";
       setError(message);
+      void notifyCarl("generation_failed", { error: message });
       // Stay on generating view so user can see the error
     }
-  }, []);
+  }, [notifyCarl]);
 
   const handlePublish = useCallback(async () => {
     if (!recipe) return;
@@ -236,13 +301,18 @@ export default function RecipeGenerator() {
         )
       );
       setState("published");
+      void notifyCarl("publish_complete", {
+        title: recipe.title || "",
+        slug: recipe.slug || "",
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to publish";
       setPublishError(message);
       setState("preview");
+      void notifyCarl("publish_failed", { error: message });
     }
-  }, [recipe, lastInput, pollUntilLive]);
+  }, [recipe, lastInput, pollUntilLive, notifyCarl]);
 
   const handleRegenerate = () => {
     setState("idle");
@@ -256,6 +326,76 @@ export default function RecipeGenerator() {
     if (!lastInput) return;
     handleGenerate({ ...lastInput, feedback });
   };
+
+  // ─── Carl handoff: auto-start the generation when ?fromCarl=1 is present ──
+  // The widget (ChefCarlWidget.onStartGeneration) has already written the
+  // params and JWT to sessionStorage before navigating here. We read it
+  // once on mount, strip the query param so refreshes don't re-trigger,
+  // and kick off handleGenerate with the primed input.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("fromCarl") !== "1") return;
+
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem("carl-generation");
+    } catch {
+      // sessionStorage disabled (private mode etc.) — give up silently.
+      return;
+    }
+    if (!raw) return;
+
+    let handoff: CarlHandoff | null = null;
+    try {
+      handoff = JSON.parse(raw) as CarlHandoff;
+    } catch {
+      return;
+    }
+    if (!handoff?.dish || !handoff?.jwt) return;
+
+    carlHandoffRef.current = handoff;
+    // Seed the JWT so handleGenerate skips the password step.
+    setJwtToken(handoff.jwt);
+
+    // Drop the handoff — prevents re-triggering on refresh/back, and
+    // keeps the password JWT out of browser storage longer than needed.
+    try {
+      sessionStorage.removeItem("carl-generation");
+    } catch {
+      /* ignore */
+    }
+    // Strip ?fromCarl from the URL so refresh doesn't re-trigger.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("fromCarl");
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      /* ignore */
+    }
+
+    handleGenerate({
+      dish: handoff.dish,
+      difficulty: handoff.difficulty || "Medium",
+      servings: handoff.servings || 4,
+      dietary: handoff.dietary || "",
+      cookware: CARL_DEFAULT_COOKWARE,
+      password: "",  // JWT is already cached; handleGenerate reuses it
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Carl says "publish it" → widget forwards as pp:publish-from-carl →
+  // we run the same publish flow as the page button.
+  useEffect(() => {
+    const onPublish = () => {
+      if (state === "preview" && recipe) {
+        void handlePublish();
+      }
+    };
+    window.addEventListener("pp:publish-from-carl", onPublish);
+    return () => window.removeEventListener("pp:publish-from-carl", onPublish);
+  }, [state, recipe, handlePublish]);
 
   return (
     <div className="max-w-2xl mx-auto">
