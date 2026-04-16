@@ -184,6 +184,8 @@ const related = allRecipes
       function wrapSteps() {
         const prose = document.getElementById('recipe-body');
         if (!prose) return;
+        // Skip if already wrapped (re-run guard for View Transitions)
+        if (prose.querySelector('.step-card')) return;
 
         const h3s = prose.querySelectorAll('h3');
         h3s.forEach((h3) => {
@@ -203,6 +205,8 @@ const related = allRecipes
         });
       }
       wrapSteps();
+      // Re-run after Astro View Transition SPA navigations
+      document.addEventListener('astro:page-load', wrapSteps);
     </script>
   </article>
 
