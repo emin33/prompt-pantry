@@ -67,6 +67,13 @@ export default function RecipeGenerator() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
   const [jwtToken, setJwtToken] = useState<string | null>(null);
+  // Parallel ref so handleGenerate (memoized with []) can read the JWT
+  // synchronously during Carl's handoff. setJwtToken is async — by the
+  // time the handoff useEffect calls handleGenerate, the state update
+  // hasn't flushed, and the captured closure sees jwtToken=null and
+  // falls into the /api/auth fallback with empty password. The ref
+  // bypasses that entirely.
+  const jwtTokenRef = useRef<string | null>(null);
   // Handoff context from Carl (call_id + agent_url + widget_token) so we
   // can POST /generator_notify when the flow terminates. Not stored in
   // React state because it never needs to trigger a re-render.
@@ -158,8 +165,11 @@ export default function RecipeGenerator() {
     };
 
     try {
-      // Get JWT token if we don't have one
-      let token = jwtToken;
+      // Get JWT token if we don't have one. Prefer the ref (populated
+      // synchronously by Carl's handoff useEffect) over the state (which
+      // lags async on the first call after handoff). Falls through to
+      // /api/auth if neither exists (the normal form-fill flow).
+      let token = jwtToken || jwtTokenRef.current;
       if (!token) {
         const authRes = await fetch("/api/auth", {
           method: "POST",
@@ -355,7 +365,10 @@ export default function RecipeGenerator() {
     if (!handoff?.dish || !handoff?.jwt) return;
 
     carlHandoffRef.current = handoff;
-    // Seed the JWT so handleGenerate skips the password step.
+    // Seed the JWT. Ref is the authoritative source for handleGenerate's
+    // stale closure; state is also set so it shows up in React devtools
+    // and any later render-triggered reads work too.
+    jwtTokenRef.current = handoff.jwt;
     setJwtToken(handoff.jwt);
 
     // Drop the handoff — prevents re-triggering on refresh/back, and
