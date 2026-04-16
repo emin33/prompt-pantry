@@ -82,6 +82,8 @@ function readPageState() {
 }
 
 export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
   // agentUrl resolution: prop (build-time inlined PUBLIC_CARL_AGENT_URL) is
   // the fast path. If empty (Cloudflare's build env doesn't always expose
   // PUBLIC_* to static builds), fall back to /api/chef-carl-config which reads
@@ -166,28 +168,66 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
     "ngrok-skip-browser-warning": "true",
   };
 
+  // Tracks the last pathname we reported to the agent so we can skip
+  // duplicate POSTs from overlapping astro events AND detect navigations
+  // that don't emit any astro event at all (fallback path below).
+  const lastReportedPathRef = useRef<string>("");
+
   const pushPageState = useCallback(async () => {
     if (!agentUrl || !callIdRef.current) return;
+    const state = readPageState();
+    lastReportedPathRef.current = state.current_page_path;
+    // Diagnostic: log every push so the cook can confirm the widget noticed
+    // their navigation. Look for "[carl] page_state ..." in the browser console.
+    // eslint-disable-next-line no-console
+    console.log("[carl] page_state push", state);
     try {
-      await fetch(`${agentUrl}/page_state`, {
+      const res = await fetch(`${agentUrl}/page_state`, {
         method: "POST",
         headers: { ...AGENT_HEADERS, "Content-Type": "application/json" },
         body: JSON.stringify({
           call_id: callIdRef.current,
-          state: readPageState(),
+          state,
         }),
       });
-    } catch {
-      // Non-fatal — agent will have slightly stale context for one turn
+      // eslint-disable-next-line no-console
+      console.log("[carl] page_state response", res.status);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[carl] page_state fetch failed", err);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentUrl]);
 
-  // Fire pushPageState on Astro page transitions.
+  // Fire pushPageState on Astro navigations. We listen to BOTH astro:page-load
+  // (canonical full-load + ClientRouter hook) AND astro:after-swap (fires
+  // earlier in the View Transition lifecycle, before images/scripts settle).
+  // Belt-and-suspenders because different transition:persist + cache
+  // configurations have been seen to drop one or the other.
+  //
+  // Belt-belt-and-suspenders: a 1.5s polling check against the previously-
+  // reported pathname. If anything slipped past both astro events (manual
+  // history.pushState, anchor link within a SPA, browser back/forward with
+  // a persisted document, etc.), this catches it within ~1 frame of the
+  // URL changing.
   useEffect(() => {
     const onNav = () => void pushPageState();
     document.addEventListener("astro:page-load", onNav);
-    return () => document.removeEventListener("astro:page-load", onNav);
+    document.addEventListener("astro:after-swap", onNav);
+    window.addEventListener("popstate", onNav);
+
+    const pollId = window.setInterval(() => {
+      if (window.location.pathname !== lastReportedPathRef.current) {
+        void pushPageState();
+      }
+    }, 1500);
+
+    return () => {
+      document.removeEventListener("astro:page-load", onNav);
+      document.removeEventListener("astro:after-swap", onNav);
+      window.removeEventListener("popstate", onNav);
+      window.clearInterval(pollId);
+    };
   }, [pushPageState]);
 
   // ─── handle agent-driven page actions (navigate + scroll_to) ──────────────
@@ -473,6 +513,25 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
     if (roomRef.current) void hangup();
   }, [hangup]);
 
+  // ─── chat text input ──────────────────────────────────────────────────────
+  const sendChat = useCallback(async () => {
+    const msg = chatInput.trim();
+    if (!msg || !agentUrl || !callIdRef.current || chatSending) return;
+    setChatSending(true);
+    setChatInput("");
+    try {
+      await fetch(`${agentUrl}/chat`, {
+        method: "POST",
+        headers: { ...AGENT_HEADERS, "Content-Type": "application/json" },
+        body: JSON.stringify({ call_id: callIdRef.current, message: msg }),
+      });
+    } catch (err) {
+      console.warn("[carl] chat send failed", err);
+    } finally {
+      setChatSending(false);
+    }
+  }, [agentUrl, chatInput, chatSending]);
+
   // ─── keyboard: Escape collapses expanded widget ────────────────────────────
   useEffect(() => {
     if (!expanded) return;
@@ -616,6 +675,33 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
             );
           })}
         </ul>
+      )}
+
+      {/* Chat input — type to Carl instead of speaking */}
+      {status === "connected" && (
+        <form
+          onSubmit={(e) => { e.preventDefault(); void sendChat(); }}
+          className="flex items-center gap-2 px-3 py-2 border-t border-warm-gray/10 bg-cream/30"
+        >
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Type to Chef Carl…"
+            className="flex-1 min-w-0 px-3 py-1.5 rounded-lg border border-warm-gray/20 bg-warm-white text-sm text-charcoal placeholder:text-warm-gray/60 focus:outline-none focus:border-sage/50"
+            disabled={chatSending}
+          />
+          <button
+            type="submit"
+            disabled={!chatInput.trim() || chatSending}
+            className="shrink-0 w-8 h-8 rounded-full bg-sage text-white flex items-center justify-center hover:bg-sage-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            aria-label="Send"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-7-7l7 7-7 7" />
+            </svg>
+          </button>
+        </form>
       )}
 
       {/* Footer controls */}
