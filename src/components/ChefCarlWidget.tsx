@@ -121,6 +121,12 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
   const roomRef = useRef<RoomSession | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const callIdRef = useRef<string>("");
+  // Shared secret the agent issued via /get_token. Echoed back as
+  // X-Pantry-Token on /page_state and /chat so the agent can verify the
+  // request came from a widget that completed the token handshake (not an
+  // arbitrary script that guessed a call_id). Empty in local dev when the
+  // server's PANTRY_WIDGET_TOKEN is unset — agent skips the check then.
+  const widgetTokenRef = useRef<string>("");
 
   // ─── mount / dismiss memory ────────────────────────────────────────────────
   useEffect(() => {
@@ -177,24 +183,36 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
     if (!agentUrl || !callIdRef.current) return;
     const state = readPageState();
     lastReportedPathRef.current = state.current_page_path;
-    // Diagnostic: log every push so the cook can confirm the widget noticed
-    // their navigation. Look for "[carl] page_state ..." in the browser console.
-    // eslint-disable-next-line no-console
-    console.log("[carl] page_state push", state);
+    // Dev-only diagnostic — stripped from production builds by Vite/Astro.
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("[carl] page_state push", state);
+    }
     try {
+      const headers: Record<string, string> = {
+        ...AGENT_HEADERS,
+        "Content-Type": "application/json",
+      };
+      if (widgetTokenRef.current) {
+        headers["X-Pantry-Token"] = widgetTokenRef.current;
+      }
       const res = await fetch(`${agentUrl}/page_state`, {
         method: "POST",
-        headers: { ...AGENT_HEADERS, "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           call_id: callIdRef.current,
           state,
         }),
       });
-      // eslint-disable-next-line no-console
-      console.log("[carl] page_state response", res.status);
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log("[carl] page_state response", res.status);
+      }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn("[carl] page_state fetch failed", err);
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn("[carl] page_state fetch failed", err);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentUrl]);
@@ -375,11 +393,16 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
       const tokenData = (await tokenResp.json()) as {
         token?: string;
         address?: string;
+        widget_token?: string;
         error?: string;
       };
       if (tokenData.error || !tokenData.token || !tokenData.address) {
         throw new Error(tokenData.error || "token request failed");
       }
+      // Store the widget token for subsequent /page_state and /chat calls.
+      // May be empty — the agent treats empty token as "check disabled" (local
+      // dev) and non-empty as "require exact match on X-Pantry-Token header".
+      widgetTokenRef.current = tokenData.widget_token || "";
 
       // 2) SDK client
       const SW = window.SignalWire;
@@ -520,13 +543,23 @@ export default function ChefCarlWidget({ agentUrl: agentUrlProp }: Props) {
     setChatSending(true);
     setChatInput("");
     try {
+      const headers: Record<string, string> = {
+        ...AGENT_HEADERS,
+        "Content-Type": "application/json",
+      };
+      if (widgetTokenRef.current) {
+        headers["X-Pantry-Token"] = widgetTokenRef.current;
+      }
       await fetch(`${agentUrl}/chat`, {
         method: "POST",
-        headers: { ...AGENT_HEADERS, "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ call_id: callIdRef.current, message: msg }),
       });
     } catch (err) {
-      console.warn("[carl] chat send failed", err);
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn("[carl] chat send failed", err);
+      }
     } finally {
       setChatSending(false);
     }
