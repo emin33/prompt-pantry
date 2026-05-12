@@ -1,0 +1,104 @@
+---
+title: "Grand Marnier Orange Slush"
+slug: "grand-marnier-orange-slush"
+description: "A Ninja Slushi-optimized reverse-engineering of EPCOT's iconic France Pavilion frozen cocktail — Grand Marnier, orange vodka, white rum, and orange juice, dialed to land at 10% ABV and 14.6% sugar so the machine actually slushes it properly."
+cuisine: "American"
+category: "Beverage"
+difficulty: "Easy"
+image: "/images/grand-marnier-orange-slush.webp"
+research: "/research/grand-marnier-orange-slush.md"
+prepTime: 5
+cookTime: 55
+totalTime: 60
+servings: 7
+ingredients:
+  - name: "Spirits"
+    items:
+      - { name: "Grand Marnier Cordon Rouge (the standard yellow-label, 40% ABV)", amount: 8, unit: "oz" }
+      - { name: "Grey Goose L'Orange (or Ketel One Oranje / Absolut Mandrin)", amount: 4, unit: "oz" }
+      - { name: "white rum (Bacardi Silver or similar neutral)", amount: 4, unit: "oz" }
+  - name: "Base"
+    items:
+      - { name: "not-from-concentrate orange juice (Minute Maid Premium or Simply Orange Pulp-Free)", amount: 44, unit: "oz" }
+      - { name: "1:1 simple syrup (cooled)", amount: 4, unit: "oz" }
+  - name: "Color"
+    items:
+      - { name: "orange gel food coloring (Wilton or AmeriColor)", amount: 5, unit: "drops" }
+  - name: "Optional 'Le Géant' Float (per serving)"
+    items:
+      - { name: "Grand Marnier Cordon Rouge (room temp, floated on top)", amount: 0.75, unit: "oz" }
+tags: ["beverage", "cocktail", "frozen", "ninja-slushi", "orange", "summer", "disney-copycat", "epcot", "adult"]
+techniques: []
+equipment: ["Ninja Slushi (FS301/FS299, 64 oz max fill)", "Large pitcher", "Measuring jiggers"]
+source: "curated"
+published: true
+publishedDate: "2026-05-12"
+---
+
+import StepTimer from '../../components/StepTimer';
+
+## Overview
+
+This is a reverse-engineering of the Grand Marnier Orange Slush sold at Les Vins des Chefs de France (the outdoor kiosk in EPCOT's France Pavilion). Most published clones are built for blenders-with-ice, where 30–40% of the final volume becomes melted water from the ice. Translated directly into a Ninja Slushi — which freezes the liquid itself with no added ice — those recipes either freeze into a brick or refuse to slush because the alcohol concentration is too high.
+
+This recipe adds back the "missing ice volume" as orange juice + a touch of simple syrup, not water — preserving the creamsicle flavor density the parks version is famous for while landing at exactly **10.0% ABV** and **14.6% sugar**, squarely inside the Slushi's operating window. The math has been verified against Ninja's published specs (2.8–16% ABV, 4% minimum sugar by mass for Spiked Slush).
+
+## Steps
+
+### 1. Pre-chill everything
+
+Refrigerate the Slushi vessel and all liquid ingredients for at least 2 hours before building. Starting from ambient temperature adds 10–15 minutes to the cycle time. The colder you start, the faster you slush.
+
+<StepTimer client:load minutes={120} label="Pre-chill" />
+
+### 2. Build the base
+
+In a large pitcher, stir together the Grand Marnier, Grey Goose L'Orange, white rum, orange juice, simple syrup, and food coloring. Stir until the color is uniform — a bright traffic-cone orange that matches the kiosk version. **Do not shake.** Incorporated air will foam through the auger and cause uneven freezing.
+
+### 3. Pour into the Slushi
+
+Pour the base into the Slushi vessel up to (but not past) the 64-oz max fill line. Lock the bail handle in place.
+
+### 4. Run Spiked Slush at level 9
+
+Select the **Spiked Slush** preset (labeled "Frozen Cocktail" on EU FS301 units). Leave the temperature at the default level 9. Spiked Slush is the only preset that whitelists alcohol-containing inputs and runs at a colder evaporator temperature to compensate for ethanol's freezing-point depression.
+
+The machine will beep three times when the slush reaches optimal texture — expect about 45–60 minutes. If the slush is still pourable-thin after 60 minutes, step the temperature to level 10 for another 20.
+
+<StepTimer client:load minutes={55} label="Slush cycle" />
+
+### 5. Dispense and serve
+
+Dispense into chilled plastic martini cups (no rim sugar, no garnish — that's the in-park presentation). For at-home table service, add a thin orange wheel notched onto the rim.
+
+### 6. Optional: the "Le Géant" float
+
+For a boozier version, do NOT add more spirit to the vessel — pushing total ABV past 13% risks failed slush. Instead, dispense the slush, then **float 0.5–0.75 oz of room-temperature Grand Marnier over the top of each glass**. Pour gently over the back of a bar spoon onto the dome of the slush. The warmer liqueur sits as a glassy amber cap, perfumes each sip with bitter-orange and brandy, and gradually melts into the drink.
+
+## Notes
+
+- **Why Spiked Slush instead of Slush or Frozen Juice?** Slush stops at the wrong target temperature for 10% ABV (texture too thin). Frozen Juice doesn't account for alcohol and has a stricter sugar floor (~11%) that would cause over-freezing. Spiked Slush is specifically tuned for boozy mixes.
+- **Don't substitute the Grand Marnier.** Generic triple sec or curaçao tastes thinner and more candy-like. Cordon Rouge's cognac base is the source of the "creamsicle" character that defines the in-park drink. The yellow-label expression — not Cuvée du Centenaire or Quintessence.
+- **OJ choice matters.** Minute Maid Premium NFC is Disney's pour partner and closest to the kiosk version. Simply Orange Pulp-Free works equally well. Avoid fresh-squeezed (variable sugar content, pulp can jam the auger over a 60-min cycle) and concentrate-reconstituted (off-flavors).
+- **The food coloring is non-negotiable for authenticity.** The natural color of OJ + spirits is a yellow-amber. The bright orange comes from gel food coloring — confirmed by Disney's annual St. Patrick's Day green makeover of the sibling Citron Slush at the same kiosk.
+
+### Scaling for other Slushi models
+
+| Model | Max fill | GM | Orange vodka | White rum | Simple syrup | NFC OJ |
+|---|---|---|---|---|---|---|
+| FS300 | 48 oz | 6 oz | 3 oz | 3 oz | 3 oz | 33 oz |
+| FS301 / FS299 | 64 oz | 8 oz | 4 oz | 4 oz | 4 oz | 44 oz |
+| FS605 SLUSHi Max | 112 oz | 14 oz | 7 oz | 7 oz | 7 oz | 77 oz |
+
+All ratios hold at 10.0% ABV and 14.6% sugar.
+
+### Troubleshooting
+
+- **Too icy / freezes hard after 60 min:** You started too cold. Take the OJ out of the fridge 30 min before building next time, or step temperature down to level 8.
+- **Soupy / never sets:** Your OJ is likely below 10 Brix (some store-brands test at 9–10). Add 1 more oz simple syrup mid-cycle through the easy-fill port — sugar bumps to ~15.5% and texture locks within 15 min.
+- **Too sweet:** Drop to 2 oz simple syrup and add 2 oz more OJ. Total sugar falls to ~12.5%, still well above the floor.
+- **Not boozy enough:** Bump Grand Marnier to 10 oz and OJ down to 42 oz. ABV climbs to 11.25%, still safe inside the window.
+
+### Alcohol-free version
+
+Omit all three spirits. Replace with 16 oz additional OJ + 4 oz orange soda for body. Switch to the **Frozen Juice** preset — at zero ABV, its tighter sugar requirement is the correct cycle.
