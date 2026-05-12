@@ -57,6 +57,7 @@ const categoryEmoji: Record<string, string> = {
   Sides: "\u{1F957}",
   Sauces: "\u{1F9C8}",
   Bread: "\u{1F35E}",
+  Beverage: "\u{1F379}",
 };
 
 const categoryColors: Record<string, string> = {
@@ -70,6 +71,7 @@ const categoryColors: Record<string, string> = {
   Sides: "bg-sage-light/30",
   Sauces: "bg-terracotta/5",
   Bread: "bg-golden-light/50",
+  Beverage: "bg-golden-light/50",
 };
 
 export default function RecipeFilter({ recipes }: Props) {

@@ -30,6 +30,7 @@ const recipes = defineCollection({
       "Sides",
       "Sauces",
       "Bread",
+      "Beverage",
     ]),
     difficulty: z.enum(["Easy", "Medium", "Hard", "Project"]),
     prepTime: z.number(),
