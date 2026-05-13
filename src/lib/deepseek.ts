@@ -45,6 +45,55 @@ interface ToolDef {
   };
 }
 
+// DeepSeek's tool-call special tokens (full-width vertical bar U+FF5C).
+// The serving infrastructure intermittently fails to parse these into the
+// structured `tool_calls` field, leaking them through as raw text in
+// `content`. We detect that and recover the calls so the agentic loop
+// doesn't silently waste a turn (and burn a search-credit budget).
+const DSML_VBAR = "｜";
+const DSML_TOOL_CALLS_MARKER = `<${DSML_VBAR}${DSML_VBAR}DSML${DSML_VBAR}${DSML_VBAR}tool_calls>`;
+
+function parseDsmlToolCalls(content: string, idSeed: string): ToolCall[] {
+  if (!content.includes(DSML_TOOL_CALLS_MARKER)) return [];
+  const v = DSML_VBAR;
+  const invokeRegex = new RegExp(
+    `<${v}${v}DSML${v}${v}invoke name="([^"]+)">([\\s\\S]*?)</${v}${v}DSML${v}${v}invoke>`,
+    "g",
+  );
+  const paramRegex = new RegExp(
+    `<${v}${v}DSML${v}${v}parameter name="([^"]+)"[^>]*>([\\s\\S]*?)</${v}${v}DSML${v}${v}parameter>`,
+    "g",
+  );
+  const calls: ToolCall[] = [];
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = invokeRegex.exec(content)) !== null) {
+    const name = m[1];
+    const inner = m[2];
+    const args: Record<string, string> = {};
+    paramRegex.lastIndex = 0;
+    let pm: RegExpExecArray | null;
+    while ((pm = paramRegex.exec(inner)) !== null) {
+      args[pm[1]] = pm[2].trim();
+    }
+    calls.push({
+      id: `dsml-${idSeed}-${i++}`,
+      type: "function",
+      function: { name, arguments: JSON.stringify(args) },
+    });
+  }
+  return calls;
+}
+
+function stripDsmlMarkup(content: string): string {
+  const v = DSML_VBAR;
+  const blockRegex = new RegExp(
+    `<${v}${v}DSML${v}${v}tool_calls>[\\s\\S]*?(</${v}${v}DSML${v}${v}tool_calls>|$)`,
+    "g",
+  );
+  return content.replace(blockRegex, "").trim();
+}
+
 const WEB_SEARCH_TOOL = {
   type: "function" as const,
   function: {
@@ -252,14 +301,33 @@ export async function callDeepSeekWithWebSearch(
     const assistant = data.choices?.[0]?.message;
     if (!assistant) throw new Error("Empty response from DeepSeek");
 
-    const calls = assistant.tool_calls || [];
+    let calls = assistant.tool_calls || [];
+    let recoveredFromDsml = false;
+    if (calls.length === 0 && assistant.content) {
+      const synthetic = parseDsmlToolCalls(assistant.content, `${iter}-${Date.now()}`);
+      if (synthetic.length > 0) {
+        console.warn(
+          `DeepSeek DSML leak detected — recovered ${synthetic.length} tool call(s) from content`,
+        );
+        calls = synthetic;
+        recoveredFromDsml = true;
+      }
+    }
     if (calls.length === 0) {
       const content = (assistant.content || "").trim();
       if (!content) throw new Error("Empty text response from DeepSeek");
       return content;
     }
 
-    messages.push(assistant);
+    if (recoveredFromDsml) {
+      messages.push({
+        role: "assistant",
+        content: stripDsmlMarkup(assistant.content || ""),
+        tool_calls: calls,
+      });
+    } else {
+      messages.push(assistant);
+    }
 
     // Reserve credits up-front for this turn's parallel calls so two
     // concurrent web_research invocations can't both think they have
