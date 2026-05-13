@@ -1,5 +1,6 @@
 import { callGemini } from "../../src/lib/gemini";
 import { callClaudeMultiAgentResearch } from "../../src/lib/claude";
+import { callDeepSeekMultiAgentResearch } from "../../src/lib/deepseek";
 import { verifyJWT } from "../lib/jwt";
 import {
   PROMPT_ENGINEER_SYSTEM,
@@ -15,6 +16,9 @@ import { toSlug } from "../../src/lib/slug";
 interface Env {
   GEMINI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
+  DEEPSEEK_API_KEY: string;
+  TAVILY_API_KEY: string;
+  RESEARCH_PROVIDER?: string;
   JWT_SECRET: string;
 }
 
@@ -247,12 +251,13 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         summary: "Research brief prepared",
       });
 
-      // Agent 2: Multi-Agent Research (parallel Claude Haiku agents with web search)
+      // Agent 2: Multi-Agent Research (parallel research agents with web search)
+      const provider = (env.RESEARCH_PROVIDER || "deepseek").toLowerCase();
       await sendSSE(writer, encoder, "agent", {
         agent: 2,
         name: "Research Team",
         status: "running",
-        detail: "Deploying 2 research agents in parallel...",
+        detail: `Deploying 2 research agents in parallel via ${provider}...`,
       });
 
       const dishName = input.dish;
@@ -281,11 +286,19 @@ Research brief for context:\n${researchBrief}`,
         },
       ];
 
-      const research = await callClaudeMultiAgentResearch(
-        env.ANTHROPIC_API_KEY,
-        researchBriefs,
-        [8, 4] // recipes: 8 searches, mistakes/authenticity: 4
-      );
+      const research = provider === "anthropic"
+        ? await callClaudeMultiAgentResearch(
+            env.ANTHROPIC_API_KEY,
+            researchBriefs,
+            [8, 4],
+          )
+        : await callDeepSeekMultiAgentResearch(
+            env.DEEPSEEK_API_KEY,
+            env.TAVILY_API_KEY,
+            env.GEMINI_API_KEY,
+            researchBriefs,
+            [8, 4],
+          );
 
       await sendSSE(writer, encoder, "agent", {
         agent: 2,
