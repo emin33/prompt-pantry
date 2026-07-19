@@ -92,7 +92,10 @@ Guidelines:
     body: JSON.stringify({
       model: MODEL,
       messages: openaiMessages,
-      max_tokens: 200,
+      // 200 was sized for Llama Scout; gpt-oss-120b writes longer and was
+      // getting truncated mid-sentence. The system prompt still enforces
+      // brevity — this is headroom, not a target.
+      max_tokens: 450,
       stream: true,
     }),
   });
