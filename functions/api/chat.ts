@@ -13,7 +13,10 @@ interface ChatRequest {
 }
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Groq shut down meta-llama/llama-4-scout-17b-16e-instruct on 2026-07-17.
+// gpt-oss-120b is Groq's recommended replacement: 131k context, which matters
+// here because RecipeChat injects the full research doc into the system prompt.
+const MODEL = "openai/gpt-oss-120b";
 
 // Simple in-memory rate limiting
 const rateLimits = new Map<string, number[]>();
