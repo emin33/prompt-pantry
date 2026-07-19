@@ -188,9 +188,15 @@ export default function RecipeChat({ recipeContext, researchUrl }: Props) {
         }
       }
 
-      // Queue any remaining text that didn't end with punctuation
-      const emittedText = emittedSentences.join(" ");
-      const remainder = accumulated.slice(emittedText.length).trim();
+      // Queue any remaining text that didn't end with punctuation.
+      // Use the regex's consumed position, not the joined length of the trimmed
+      // sentences — the model separates sentences with "\n\n", so reconstructed
+      // length drifts short and the slice would duplicate the tail of the last
+      // sentence as a phantom bubble.
+      const remainderRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
+      let consumed = 0;
+      while (remainderRegex.exec(accumulated) !== null) consumed = remainderRegex.lastIndex;
+      const remainder = accumulated.slice(consumed).trim();
       if (remainder && remainder.length > 1) {
         sentenceQueue.push(remainder);
         drip();
