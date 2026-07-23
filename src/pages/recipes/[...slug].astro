@@ -22,6 +22,11 @@ const { recipe } = Astro.props;
 const { Content } = await render(recipe);
 const { data } = recipe;
 
+// The Steps section only — scope structured-data instructions to it so the
+// Overview / shopping preamble and the Notes don't leak in as bogus steps.
+const stepsBody =
+  (recipe.body || "").split(/^## /m).find((s) => /^Steps\b/.test(s.trim())) || "";
+
 // Build JSON-LD structured data
 const jsonLd = {
   "@context": "https://schema.org",
@@ -44,13 +49,21 @@ const jsonLd = {
       return parts.join(" ");
     })
   ),
-  recipeInstructions: (recipe.body || "")
+  recipeInstructions: stepsBody
     .split(/^### /m)
+    .slice(1)
     .filter((s) => s.trim())
     .map((block) => {
       const lines = block.trim().split("\n");
       const name = lines[0].trim();
-      const text = lines.slice(1).join(" ").replace(/[*_#`]/g, "").trim();
+      const text = lines
+        .slice(1)
+        .join(" ")
+        .replace(/<Why[\s\S]*?<\/Why>/g, " ") // drop rationale asides — schema wants the action, not the essay
+        .replace(/<[^>]+>/g, " ") // drop remaining JSX/HTML (StepTimer, etc.)
+        .replace(/[*_#`]/g, "") // strip markdown emphasis/heading/code markers
+        .replace(/\s+/g, " ")
+        .trim();
       return { "@type": "HowToStep", name, text };
     }),
 };

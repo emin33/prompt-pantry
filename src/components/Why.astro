@@ -1,0 +1,30 @@
+---
+/**
+ * Why.astro — a collapsible "why it works" aside.
+ *
+ * Splits the food-science / sourcing rationale out of a step's action so each
+ * step reads as a do-this-now instruction. Renders open on the recipe page
+ * (the depth is the point), but CookMode strips the `open` attribute so the
+ * follow-along screen shows only the action, with the reasoning one tap away.
+ *
+ * Usage in MDX (blank lines around the children so they parse as markdown):
+ *
+ *   <Why title="Why thigh, not breast">
+ *
+ *   Boneless skinless **thigh, not breast**. ...
+ *
+ *   </Why>
+ */
+interface Props {
+  title?: string;
+}
+
+const { title = "Why this works" } = Astro.props;
+---
+
+<details class="why-aside" open>
+  <summary>{title}</summary>
+  <div class="why-body">
+    <slot />
+  </div>
+</details>

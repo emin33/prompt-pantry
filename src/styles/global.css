@@ -134,6 +134,84 @@
   .technique-warning strong:first-child {
     @apply text-golden;
   }
+
+  /* "Why it works" asides — rationale and food-science, split out of the
+     action so each step reads as a do-this-now instruction. Neutral tone
+     (distinct from the sage technique tips and golden warnings). Open on the
+     page; Cook Mode collapses them to a single tappable line. */
+  .recipe-prose .why-aside {
+    @apply my-3 rounded-lg border-l-4 border-warm-gray/25 bg-warm-gray/5;
+  }
+
+  .recipe-prose .why-aside > summary {
+    @apply flex items-center gap-2 cursor-pointer select-none px-4 py-2.5
+           text-xs font-semibold uppercase tracking-wide text-warm-gray;
+    list-style: none;
+  }
+
+  .recipe-prose .why-aside > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .recipe-prose .why-aside > summary::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
+    flex: none;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+  }
+
+  .recipe-prose .why-aside[open] > summary::before {
+    transform: rotate(45deg);
+  }
+
+  .recipe-prose .why-aside .why-body {
+    @apply px-4 pb-3 pt-0;
+  }
+
+  .recipe-prose .why-aside .why-body p {
+    @apply mb-2.5 text-sm leading-relaxed text-warm-gray;
+  }
+
+  .recipe-prose .why-aside .why-body > *:last-child {
+    @apply mb-0;
+  }
+
+  /* Blockquotes as attention callouts (e.g. the food-safety note) */
+  .recipe-prose blockquote {
+    @apply my-5 py-3 px-4 rounded-r-lg border-l-4 border-terracotta bg-terracotta/5;
+  }
+
+  .recipe-prose blockquote p {
+    @apply mb-2 text-charcoal;
+  }
+
+  .recipe-prose blockquote p:last-child {
+    @apply mb-0;
+  }
+
+  /* Reference tables (soy-sauce decoders, the gluten map, oyster-sauce picks).
+     Scrolls horizontally on narrow screens instead of breaking the layout. */
+  .recipe-prose table {
+    @apply block w-full overflow-x-auto my-5 text-sm;
+    border-collapse: collapse;
+  }
+
+  .recipe-prose th,
+  .recipe-prose td {
+    @apply px-3 py-2 text-left align-top border border-warm-gray/15;
+  }
+
+  .recipe-prose th {
+    @apply font-semibold text-charcoal bg-warm-gray/5;
+  }
+
+  .recipe-prose td {
+    @apply text-warm-gray;
+  }
 }
 
 @media print {

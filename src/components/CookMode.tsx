@@ -36,6 +36,12 @@ export default function CookMode() {
       const clone = node.cloneNode(true) as HTMLElement;
       container.appendChild(clone);
 
+      // Collapse "why it works" asides — cook mode shows the action; the
+      // reasoning stays one tap away instead of filling the screen.
+      clone
+        .querySelectorAll("details.why-aside")
+        .forEach((d) => d.removeAttribute("open"));
+
       // Wire up timer buttons in the cloned content
       clone.querySelectorAll("button").forEach((btn) => {
         const text = btn.textContent || "";
