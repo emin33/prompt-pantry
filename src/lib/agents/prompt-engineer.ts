@@ -1,4 +1,8 @@
+import { difficultyDirective, type RecipeType } from "./calibration";
+
 export const PROMPT_ENGINEER_SYSTEM = `You are a culinary prompt engineer. Your job is to take a dish name and user preferences and produce a detailed research brief that will guide a research agent to find the best possible information for creating an outstanding home cook recipe.
+
+If the request is a DRINK (cocktail, mocktail, or other beverage), adapt the brief accordingly: techniques become shaking vs stirring, dilution, ice, temperature, and syrup work; ratios become the spec in oz/ml; equipment questions cover bar tools and reasonable substitutes; and sources should be renowned bartenders, acclaimed cocktail books, and authoritative drink publications rather than chefs and cookbooks.
 
 Your output should be a structured research brief that covers:
 
@@ -24,23 +28,34 @@ Write the brief as specific, actionable research questions — not vague directi
 
 export function buildPromptEngineerMessage(input: {
   dish: string;
+  recipeType?: RecipeType;
   difficulty: string;
   cookware: string[];
   dietary: string;
   servings: number;
   feedback?: string;
 }): string {
+  const recipeType = input.recipeType || "food";
   const parts = [
-    `Dish: ${input.dish}`,
-    `Difficulty level: ${input.difficulty}`,
-    `Available cookware: ${input.cookware.join(", ")}`,
+    recipeType === "drink"
+      ? `Drink: ${input.dish} (this is a beverage request — use drink mode)`
+      : `Dish: ${input.dish}`,
+    `Difficulty level: ${input.difficulty}. ${difficultyDirective(input.difficulty, recipeType)}`,
   ];
+
+  if (recipeType !== "drink") {
+    parts.push(`Available cookware: ${input.cookware.join(", ")}`);
+  }
 
   if (input.dietary) {
     parts.push(`Dietary restrictions: ${input.dietary}`);
   }
 
-  parts.push(`Target servings: ${input.servings}`);
+  parts.push(
+    recipeType === "drink"
+      ? `Target number of drinks: ${input.servings}`
+      : `Target servings: ${input.servings}`
+  );
 
   if (input.feedback) {
     parts.push(`\nIMPORTANT — User feedback from a previous generation attempt. The user was not satisfied and wants these changes:\n"${input.feedback}"\n\nPlease incorporate this feedback into your research brief so the final recipe addresses these concerns.`);

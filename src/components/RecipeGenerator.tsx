@@ -82,34 +82,17 @@ export default function RecipeGenerator() {
   const notifyCarl = useCallback(
     async (event: string, payload: Record<string, string>) => {
       const handoff = carlHandoffRef.current;
-      // Unconditional logs (not dev-gated) for the first round of real
-      // generation traffic. The notify was silently failing in the last
-      // test and we need visibility to pin down whether it's the ref
-      // being null, the fetch failing, or something else. Remove once
-      // the flow is proven stable.
-      // eslint-disable-next-line no-console
-      console.log("[recipe-generator] notifyCarl called", {
-        event,
-        hasHandoff: !!handoff,
-        hasAgentUrl: !!handoff?.agent_url,
-        hasCallId: !!handoff?.call_id,
-        hasToken: !!handoff?.widget_token,
-      });
       if (!handoff?.agent_url || !handoff?.call_id) {
-        // eslint-disable-next-line no-console
-        console.warn("[recipe-generator] notifyCarl skipped — handoff ref empty");
         return;
       }
       try {
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (handoff.widget_token) headers["X-Pantry-Token"] = handoff.widget_token;
-        const res = await fetch(`${handoff.agent_url.replace(/\/$/, "")}/generator_notify`, {
+        await fetch(`${handoff.agent_url.replace(/\/$/, "")}/generator_notify`, {
           method: "POST",
           headers,
           body: JSON.stringify({ call_id: handoff.call_id, event, ...payload }),
         });
-        // eslint-disable-next-line no-console
-        console.log("[recipe-generator] notifyCarl response", event, res.status);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn("[recipe-generator] notifyCarl fetch failed:", event, err);
@@ -412,6 +395,7 @@ export default function RecipeGenerator() {
 
     handleGenerate({
       dish: handoff.dish,
+      recipeType: "food", // Carl only does food handoffs today
       difficulty: handoff.difficulty || "Medium",
       servings: handoff.servings || 4,
       dietary: handoff.dietary || "",

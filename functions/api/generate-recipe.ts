@@ -24,6 +24,7 @@ interface Env {
 
 interface GenerateRequest {
   dish: string;
+  recipeType?: "food" | "drink";
   difficulty: string;
   cookware: string[];
   dietary: string;
@@ -150,6 +151,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   // Validate dish input
   const dish = input.dish?.trim() || "";
+  const recipeType: "food" | "drink" = input.recipeType === "drink" ? "drink" : "food";
+  input.recipeType = recipeType;
   if (dish.length < 2 || dish.length > 200) {
     return new Response(
       JSON.stringify({ error: "Dish name must be 2-200 characters" }),
@@ -200,13 +203,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // LLM validation for borderline cases (Gemini free)
       const validationResult = await callGemini(
         env.GEMINI_API_KEY,
-        `You are a food validator. Your ONLY job is to determine if the user's input is a real food, dish, or recipe that can be cooked. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
+        recipeType === "drink"
+          ? `You are a drink validator. Your ONLY job is to determine if the user's input is a real beverage — a cocktail, mocktail, or other drink that can be made. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
+
+Examples of VALID inputs: "margarita", "old fashioned", "butterbeer", "mango lassi", "espresso martini", "hot chocolate", "virgin pina colada"
+Examples of INVALID inputs: "box of nails", "my homework", "a car", "the color blue", "motor oil"
+
+Be generous — if it could reasonably be a drink from any tradition, it's valid. Misspellings are fine.`
+          : `You are a food validator. Your ONLY job is to determine if the user's input is a real food, dish, or recipe that can be cooked. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
 
 Examples of VALID inputs: "pad thai", "chicken parmesan", "sourdough bread", "chocolate lava cake", "miso soup", "beef wellington", "scrambled eggs"
 Examples of INVALID inputs: "box of nails", "my homework", "a car", "the color blue", "clean my room"
 
 Be generous — if it could reasonably be a food or dish from any cuisine, it's valid. Misspellings are fine.`,
-        `Is this a valid food/dish to make a recipe for? "${dish}"`,
+        recipeType === "drink"
+          ? `Is this a valid drink to make a recipe for? "${dish}"`
+          : `Is this a valid food/dish to make a recipe for? "${dish}"`,
         true // JSON mode
       );
 
@@ -261,10 +273,35 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
       });
 
       const dishName = input.dish;
-      const researchBriefs = [
-        {
-          focus: "Best Recipes, Techniques & Food Science",
-          prompt: `You are deeply researching "${dishName}" for a recipe project. Search for the BEST versions from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, etc.). For each source, extract:
+      const researchBriefs = recipeType === "drink"
+        ? [
+            {
+              focus: "Best Specs, Technique & Drink Science",
+              prompt: `You are deeply researching the drink "${dishName}" for a recipe project. Search for the BEST versions from renowned bartenders, acclaimed cocktail books, and authoritative drink sources (Death & Co, Liquor.com, Difford's Guide, PDT Cocktail Book, Imbibe, respected bartenders, etc.). For each source, extract:
+- The exact spec in oz/ml and the build order
+- Technique: shaken vs stirred, ice choice, dilution targets, temperature
+- The reasoning behind why their approach works
+- What makes their version exceptional vs. average
+
+Compare specs and note consensus vs. disagreements.
+
+Research brief for context:\n${researchBrief}`,
+            },
+            {
+              focus: "Common Mistakes, Pro Tips & Variations",
+              prompt: `You are researching the drink "${dishName}" for a recipe project. Cover two areas:
+
+1. MISTAKES & TIPS: Find the most common mistakes home bartenders make with this drink and professional tips to avoid them — over/under-dilution, wrong ice, bad ratios, technique errors.
+
+2. HISTORY & VARIATIONS: What is the classic/original spec and its story? What are the notable riffs and modern variations? What do purists insist on? Include batching and non-alcoholic adaptations where relevant.
+
+Research brief for context:\n${researchBrief}`,
+            },
+          ]
+        : [
+            {
+              focus: "Best Recipes, Techniques & Food Science",
+              prompt: `You are deeply researching "${dishName}" for a recipe project. Search for the BEST versions from renowned chefs, acclaimed cookbooks, and authoritative food sources (Serious Eats, America's Test Kitchen, Kenji Lopez-Alt, Bon Appetit, professional chefs, etc.). For each source, extract:
 - Exact techniques, temperatures, and timing
 - Ingredient ratios and proportions
 - The food science behind why their approach works
@@ -273,18 +310,18 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
 Compare approaches and note consensus vs. disagreements.
 
 Research brief for context:\n${researchBrief}`,
-        },
-        {
-          focus: "Common Mistakes, Pro Tips & Regional Authenticity",
-          prompt: `You are researching "${dishName}" for a recipe project. Cover two areas:
+            },
+            {
+              focus: "Common Mistakes, Pro Tips & Regional Authenticity",
+              prompt: `You are researching "${dishName}" for a recipe project. Cover two areas:
 
 1. MISTAKES & TIPS: Find the most common mistakes home cooks make with this dish and professional tips to avoid them. Focus on pitfalls that separate mediocre from excellent results.
 
 2. AUTHENTICITY & VARIATIONS: How is this dish prepared in its region of origin vs. adaptations elsewhere? What are the traditional ingredients and techniques? What do purists insist on?
 
 Research brief for context:\n${researchBrief}`,
-        },
-      ];
+            },
+          ];
 
       const research = provider === "anthropic"
         ? await callClaudeMultiAgentResearch(
@@ -323,7 +360,7 @@ Research brief for context:\n${researchBrief}`,
       );
 
       const recipeData = parseRecipeJSON(recipeJsonStr);
-      const mdx = buildMDX(recipeData, input.difficulty);
+      const mdx = buildMDX(recipeData, input.difficulty, recipeType);
       const slug = toSlug(recipeData.title);
 
       await sendSSE(writer, encoder, "agent", {

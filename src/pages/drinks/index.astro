@@ -3,10 +3,9 @@ import { getCollection } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 import RecipeFilter from "../../components/RecipeFilter";
 
-// Beverages live on /drinks — everything else shows here.
 const recipes = await getCollection(
   "recipes",
-  ({ data }) => data.published && !data.variantOf && data.category !== "Beverage"
+  ({ data }) => data.published && !data.variantOf && data.category === "Beverage"
 );
 
 const recipeData = recipes.map((r) => ({
@@ -24,15 +23,12 @@ const recipeData = recipes.map((r) => ({
 }));
 ---
 
-<Layout title="Recipes" description="Browse all recipes.">
+<Layout title="Drinks" description="Cocktails, slushes, and sips from the Prompt Pantry bar.">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-    <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-2">Recipes</h1>
+    <h1 class="font-display text-4xl md:text-5xl text-charcoal mb-2">Drinks</h1>
     <p class="text-warm-gray mb-8">
-      Curated recipes are the house specialty — researched, tested, and refined.
-      House recipes are what we throw together on a weeknight, and Community
-      recipes come straight from the generator. Looking for drinks? They have
-      <a href="/drinks" class="text-terracotta hover:text-terracotta-dark">their own shelf</a>.
+      The Prompt Pantry bar — cocktails, slushes, and sips to go with dinner.
     </p>
-    <RecipeFilter client:load recipes={recipeData} />
+    <RecipeFilter client:load recipes={recipeData} defaultSource="" />
   </div>
 </Layout>

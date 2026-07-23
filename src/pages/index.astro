@@ -3,16 +3,29 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import RecipeCard from "../components/RecipeCard.astro";
 
-const recipes = await getCollection("recipes", ({ data }) => data.published && data.source !== "community" && !data.variantOf);
-const communityRecipes = await getCollection("recipes", ({ data }) => data.published && data.source === "community" && !data.variantOf);
+const byDate = (a: { data: { publishedDate: string } }, b: { data: { publishedDate: string } }) =>
+  b.data.publishedDate.localeCompare(a.data.publishedDate);
 
-// Sort by publishedDate descending
-const sorted = recipes.sort(
-  (a, b) => b.data.publishedDate.localeCompare(a.data.publishedDate)
+// Curated food is the hallmark — house recipes, community creations, and
+// drinks each get their own strip below.
+const recipes = await getCollection(
+  "recipes",
+  ({ data }) => data.published && data.source === "curated" && data.category !== "Beverage" && !data.variantOf
 );
-const communitySorted = communityRecipes.sort(
-  (a, b) => b.data.publishedDate.localeCompare(a.data.publishedDate)
-).slice(0, 6);
+const houseRecipes = await getCollection(
+  "recipes",
+  ({ data }) => data.published && data.source === "house" && data.category !== "Beverage" && !data.variantOf
+);
+const communityRecipes = await getCollection("recipes", ({ data }) => data.published && data.source === "community" && !data.variantOf);
+const drinkRecipes = await getCollection(
+  "recipes",
+  ({ data }) => data.published && data.category === "Beverage" && !data.variantOf
+);
+
+const sorted = recipes.sort(byDate);
+const houseSorted = houseRecipes.sort(byDate).slice(0, 3);
+const communitySorted = communityRecipes.sort(byDate).slice(0, 6);
+const drinksSorted = drinkRecipes.sort(byDate).slice(0, 3);
 
 const featured = sorted.find((r) => r.data.slug === "jamaican-jerk-chicken") || sorted[0];
 const recent = sorted.filter((r) => r.data.slug !== featured.data.slug).slice(0, 6);
@@ -173,6 +186,79 @@ const recent = sorted.filter((r) => r.data.slug !== featured.data.slug).slice(0,
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {communitySorted.map((r) => (
+          <RecipeCard
+            title={r.data.title}
+            slug={r.data.slug}
+            description={r.data.description}
+            cuisine={r.data.cuisine}
+            difficulty={r.data.difficulty}
+            totalTime={r.data.totalTime}
+            category={r.data.category}
+            image={r.data.image}
+            source={r.data.source}
+            hideBadge={true}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {/* House recipes */}
+  {houseSorted.length > 0 && (
+    <section class="max-w-5xl mx-auto px-4 sm:px-6 mb-16">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <h2 class="font-display text-2xl text-charcoal">House Recipes</h2>
+          <span class="px-2.5 py-0.5 rounded-full bg-golden-light text-charcoal text-xs font-semibold uppercase tracking-wide">
+            Weeknight Lazy
+          </span>
+        </div>
+        <a
+          href="/recipes?source=house"
+          class="text-sm font-medium text-terracotta hover:text-terracotta-dark transition-colors"
+        >
+          View all &rarr;
+        </a>
+      </div>
+      <p class="text-warm-gray text-sm mb-6 -mt-3 max-w-2xl">
+        What we actually make on a Tuesday. Minimum effort, maximum jar-dumping — no curation standards were harmed.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {houseSorted.map((r) => (
+          <RecipeCard
+            title={r.data.title}
+            slug={r.data.slug}
+            description={r.data.description}
+            cuisine={r.data.cuisine}
+            difficulty={r.data.difficulty}
+            totalTime={r.data.totalTime}
+            category={r.data.category}
+            image={r.data.image}
+            source={r.data.source}
+            hideBadge={true}
+          />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {/* Drinks */}
+  {drinksSorted.length > 0 && (
+    <section class="max-w-5xl mx-auto px-4 sm:px-6 mb-16">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <h2 class="font-display text-2xl text-charcoal">From the Bar</h2>
+          <span class="text-xl">&#x1F379;</span>
+        </div>
+        <a
+          href="/drinks"
+          class="text-sm font-medium text-terracotta hover:text-terracotta-dark transition-colors"
+        >
+          View all &rarr;
+        </a>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {drinksSorted.map((r) => (
           <RecipeCard
             title={r.data.title}
             slug={r.data.slug}

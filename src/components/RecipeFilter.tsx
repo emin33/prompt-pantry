@@ -16,7 +16,16 @@ interface RecipeData {
 
 interface Props {
   recipes: RecipeData[];
+  /** Source tab selected on first load when the URL has no ?source= param. "" = All. */
+  defaultSource?: string;
 }
+
+const SOURCE_TABS: { value: string; label: string }[] = [
+  { value: "curated", label: "Curated" },
+  { value: "house", label: "House" },
+  { value: "community", label: "Community" },
+  { value: "", label: "All" },
+];
 
 type SortOption = "newest" | "time" | "difficulty";
 
@@ -74,17 +83,37 @@ const categoryColors: Record<string, string> = {
   Beverage: "bg-golden-light/50",
 };
 
-export default function RecipeFilter({ recipes }: Props) {
+export default function RecipeFilter({ recipes, defaultSource = "curated" }: Props) {
   const [search, setSearch] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [source, setSource] = useState(() => {
-    if (typeof window === "undefined") return "";
+    if (typeof window === "undefined") return defaultSource;
     const params = new URLSearchParams(window.location.search);
-    return params.get("source") || "";
+    const fromUrl = params.get("source");
+    if (fromUrl === null) return defaultSource;
+    return fromUrl === "all" ? "" : fromUrl;
   });
   const [sort, setSort] = useState<SortOption>("newest");
+
+  const selectSource = (value: string) => {
+    setSource(value);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (value === defaultSource) url.searchParams.delete("source");
+    else url.searchParams.set("source", value || "all");
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  const sourceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of recipes) {
+      const s = r.source || "curated";
+      counts[s] = (counts[s] || 0) + 1;
+    }
+    return counts;
+  }, [recipes]);
 
   const cuisines = useMemo(
     () => [...new Set(recipes.map((r) => r.cuisine))].sort(),
@@ -122,10 +151,29 @@ export default function RecipeFilter({ recipes }: Props) {
     return result;
   }, [recipes, search, cuisine, category, difficulty, source, sort]);
 
-  const hasFilters = search || cuisine || category || difficulty || source;
+  const hasFilters = search || cuisine || category || difficulty;
 
   return (
     <div>
+      {/* Source tabs */}
+      <div className="inline-flex rounded-lg border border-warm-gray/20 bg-warm-white p-1 mb-6">
+        {SOURCE_TABS.filter(
+          (t) => t.value === "" || (sourceCounts[t.value] || 0) > 0
+        ).map((t) => (
+          <button
+            key={t.value}
+            onClick={() => selectSource(t.value)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              source === t.value
+                ? "bg-terracotta text-white"
+                : "text-muted hover:text-charcoal"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3 mb-8">
         <input
@@ -175,16 +223,6 @@ export default function RecipeFilter({ recipes }: Props) {
         </select>
 
         <select
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-warm-gray/20 bg-warm-white text-sm text-charcoal focus:outline-none focus:border-terracotta/40"
-        >
-          <option value="">All Sources</option>
-          <option value="curated">Curated</option>
-          <option value="community">Community</option>
-        </select>
-
-        <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
           className="px-3 py-2 rounded-lg border border-warm-gray/20 bg-warm-white text-sm text-charcoal focus:outline-none focus:border-terracotta/40"
@@ -201,7 +239,6 @@ export default function RecipeFilter({ recipes }: Props) {
               setCuisine("");
               setCategory("");
               setDifficulty("");
-              setSource("");
             }}
             className="text-xs text-warm-gray hover:text-terracotta transition-colors"
           >
@@ -240,11 +277,14 @@ export default function RecipeFilter({ recipes }: Props) {
                       <span className="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
                     </div>
                   )}
-                  {r.source === "community" && (
+                  {(r.source === "community" || r.source === "house") && (
                     <div className="absolute top-0 left-0 pointer-events-none">
-                      <div className="bg-sage text-warm-white text-[7px] font-bold uppercase tracking-wider pl-2 pr-3 shadow-sm rounded-br-lg leading-4"
+                      <div
+                        className={`${
+                          r.source === "community" ? "bg-sage" : "bg-golden"
+                        } text-warm-white text-[7px] font-bold uppercase tracking-wider pl-2 pr-3 shadow-sm rounded-br-lg leading-4`}
                       >
-                        Community
+                        {r.source === "community" ? "Community" : "House"}
                       </div>
                     </div>
                   )}

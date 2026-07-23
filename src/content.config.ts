@@ -53,7 +53,7 @@ const recipes = defineCollection({
       label: z.string(),
       slug: z.string(),
     }).optional(),
-    source: z.enum(["curated", "community"]).default("curated"),
+    source: z.enum(["curated", "house", "community"]).default("curated"),
     published: z.boolean().default(true),
     publishedDate: z.string(),
     lastUpdated: z.string().optional(),

@@ -1,3 +1,5 @@
+import { difficultyDirective, type RecipeType } from "./calibration";
+
 export const RECIPE_ARCHITECT_SYSTEM = `You are a recipe architect. Your job is to synthesize culinary research into a complete, well-structured recipe for home cooks. You must output valid JSON matching the exact schema below.
 
 CRITICAL: Your output must be ONLY valid JSON — no markdown, no explanation, no wrapping. Just the JSON object.
@@ -7,7 +9,7 @@ The JSON schema:
   "title": "string — the dish name, concise and natural. Use just the dish name (e.g. 'Pad Thai', 'Butter Chicken') with a short descriptor ONLY if it's a specific variant (e.g. 'Smoked Brisket', 'Spicy Miso Ramen'). NEVER use colons, subtitles, 'Mastering', 'Ultimate', 'Edition', or novel-style titles.",
   "description": "string — 1-2 sentence hook, no generic phrases",
   "cuisine": "string — e.g. Indian, Japanese, Italian, Thai, Mexican, American, etc.",
-  "category": "MUST be exactly one of: Noodles, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread",
+  "category": "MUST be exactly one of: Noodles, Meat, Seafood, Vegetarian, Soup, Dessert, Breakfast, Sides, Sauces, Bread, Beverage",
   "prepTime": "number — minutes of active prep",
   "cookTime": "number — minutes of cooking",
   "restTime": "number — minutes of resting (0 if none)",
@@ -61,26 +63,36 @@ Guidelines for the recipe content:
   * "Noodles" = any dish where noodles or pasta are the star (Pad Thai, ramen, pho, lo mein, spaghetti, fettuccine, lasagna, etc.)
   * "Vegetarian" = no meat or seafood
   * If a dish has noodles AND a strong protein component, use "Noodles" if the noodles are the star, or the protein category if the protein is the star.
-  * If a dish has BOTH meat and seafood, use whichever is the star protein.`;
+  * If a dish has BOTH meat and seafood, use whichever is the star protein.
+  * "Beverage" = any drink — cocktail, mocktail, slush, hot drink. ALWAYS use "Beverage" for drink requests.
+
+DRINK MODE: When the request is a beverage, adapt the output:
+  * category MUST be "Beverage" and servings = number of drinks.
+  * Give the spec in oz (or ml for large batches) — bar measures, not cups of spirits.
+  * Steps cover build order, shake vs stir (and why), ice, dilution, strain, glassware, and garnish — with sensory cues (frost on the shaker, texture of the foam) instead of doneness cues.
+  * prepTime = active build time, cookTime = 0 unless something is actually cooked (a syrup, a mulled base), restTime = chilling/infusing time.
+  * Notes should cover batching math, non-alcoholic swaps, and make-ahead components.
+  * Ignore the cookware list — assume basic bar tools appropriate to the difficulty level.`;
 
 export function buildRecipeArchitectMessage(
   research: string,
   input: {
     dish: string;
+    recipeType?: RecipeType;
     difficulty: string;
     cookware: string[];
     dietary: string;
     servings: number;
   }
 ): string {
-  return `Using the research below, create a complete recipe as JSON.
+  const recipeType = input.recipeType || "food";
+  const isDrink = recipeType === "drink";
+  return `Using the research below, create a complete ${isDrink ? "drink recipe (DRINK MODE)" : "recipe"} as JSON.
 
 User preferences:
-- Dish: ${input.dish}
-- Difficulty: ${input.difficulty}
-- Available cookware: ${input.cookware.join(", ")}
-${input.dietary ? `- Dietary restrictions: ${input.dietary}` : ""}
-- Target servings: ${input.servings}
+- ${isDrink ? "Drink" : "Dish"}: ${input.dish}
+- Difficulty: ${input.difficulty}. ${difficultyDirective(input.difficulty, recipeType)}
+${isDrink ? "" : `- Available cookware: ${input.cookware.join(", ")}\n`}${input.dietary ? `- Dietary restrictions: ${input.dietary}\n` : ""}- Target ${isDrink ? "number of drinks" : "servings"}: ${input.servings}
 
 Research findings:
 ${research}`;

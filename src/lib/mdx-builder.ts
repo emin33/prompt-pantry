@@ -40,6 +40,8 @@ export interface RecipeJSON {
   notes: RecipeNote[];
 }
 
+// Must stay in sync with the category enum in src/content.config.ts —
+// anything else fails the content collection schema at build time.
 const VALID_CATEGORIES = [
   "Noodles",
   "Meat",
@@ -51,6 +53,7 @@ const VALID_CATEGORIES = [
   "Sides",
   "Sauces",
   "Bread",
+  "Beverage",
 ];
 
 const VALID_DIFFICULTIES = ["Easy", "Medium", "Hard", "Project"];
@@ -63,7 +66,9 @@ function escapeYaml(str: string): string {
   return `"${str}"`;
 }
 
-function validateCategory(category: string): string {
+function validateCategory(category: string, recipeType?: string): string {
+  // Drinks always land in Beverage regardless of what the model returned.
+  if (recipeType === "drink") return "Beverage";
   const match = VALID_CATEGORIES.find(
     (c) => c.toLowerCase() === category.toLowerCase()
   );
@@ -77,9 +82,9 @@ function validateDifficulty(difficulty: string): string {
   return match || "Medium"; // fallback
 }
 
-export function buildMDX(recipe: RecipeJSON, difficulty: string): string {
+export function buildMDX(recipe: RecipeJSON, difficulty: string, recipeType?: string): string {
   const slug = toSlug(recipe.title);
-  const category = validateCategory(recipe.category);
+  const category = validateCategory(recipe.category, recipeType);
   const validDifficulty = validateDifficulty(difficulty);
   const totalTime = recipe.prepTime + recipe.cookTime + (recipe.restTime || 0);
   const today = new Date().toISOString().split("T")[0];

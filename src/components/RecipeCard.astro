@@ -13,7 +13,7 @@ interface Props {
 }
 
 const { title, slug, description, cuisine, difficulty, totalTime, category, image, source, hideBadge } = Astro.props;
-const isCommunity = source === "community" && !hideBadge;
+const badge = !hideBadge && (source === "community" || source === "house") ? source : null;
 
 const difficultyLevels: Record<string, number> = {
   Easy: 1,
@@ -88,11 +88,11 @@ const accent = categoryColors[category] || "bg-cream";
         <span class="text-5xl opacity-80 group-hover:scale-110 transition-transform duration-300">{heroEmoji}</span>
       </div>
     )}
-    {isCommunity && (
+    {badge && (
       <div class="absolute top-0 left-0 pointer-events-none">
-        <div class="relative bg-sage text-warm-white text-[7px] font-bold uppercase tracking-wider pl-2 pr-3 shadow-sm rounded-br-lg leading-4"
+        <div class={`relative ${badge === "community" ? "bg-sage" : "bg-golden"} text-warm-white text-[7px] font-bold uppercase tracking-wider pl-2 pr-3 shadow-sm rounded-br-lg leading-4`}
         >
-          Community
+          {badge === "community" ? "Community" : "House"}
         </div>
       </div>
     )}
