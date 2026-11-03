@@ -1,5 +1,12 @@
 import { callGemini } from "../../src/lib/gemini";
-import { callClaudeMultiAgentResearch } from "../../src/lib/claude";
+import {
+  CLAUDE_MODELS,
+  CostTracker,
+  RECIPE_SCHEMA,
+  VALIDATION_SCHEMA,
+  callClaude,
+  callClaudeMultiAgentResearch,
+} from "../../src/lib/claude";
 import { callDeepSeekMultiAgentResearch } from "../../src/lib/deepseek";
 import { verifyJWT } from "../lib/jwt";
 import {
@@ -200,9 +207,38 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return;
       }
 
-      // LLM validation for borderline cases (Gemini free)
-      const validationResult = await callGemini(
-        env.GEMINI_API_KEY,
+      // Provider for every LLM stage: "anthropic" (default) runs the whole pipeline on
+      // Claude; "deepseek" is the legacy Gemini + DeepSeek/Tavily path.
+      const provider = (env.RESEARCH_PROVIDER || "anthropic").toLowerCase();
+      const useClaude = provider === "anthropic";
+      const cost = new CostTracker();
+      const llm = (
+        stage: "validator" | "promptEngineer" | "architect",
+        system: string,
+        user: string,
+        jsonSchema?: Record<string, unknown>,
+      ) =>
+        useClaude
+          ? callClaude({
+              apiKey: env.ANTHROPIC_API_KEY,
+              model: CLAUDE_MODELS[stage],
+              effort: stage === "architect" ? "high" : "low",
+              system,
+              user,
+              jsonSchema,
+              cost,
+            })
+          : callGemini(
+              env.GEMINI_API_KEY,
+              system,
+              user,
+              !!jsonSchema,
+              stage === "architect" ? "gemini-3-flash-preview" : undefined,
+            );
+
+      // LLM validation for borderline cases
+      const validationResult = await llm(
+        "validator",
         recipeType === "drink"
           ? `You are a drink validator. Your ONLY job is to determine if the user's input is a real beverage — a cocktail, mocktail, or other drink that can be made. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
 
@@ -219,7 +255,7 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         recipeType === "drink"
           ? `Is this a valid drink to make a recipe for? "${dish}"`
           : `Is this a valid food/dish to make a recipe for? "${dish}"`,
-        true // JSON mode
+        VALIDATION_SCHEMA,
       );
 
       try {
@@ -243,15 +279,15 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
         summary: "Valid dish confirmed",
       });
 
-      // Agent 1: Prompt Engineer (Gemini free)
+      // Agent 1: Prompt Engineer
       await sendSSE(writer, encoder, "agent", {
         agent: 1,
         name: "Prompt Engineer",
         status: "running",
       });
 
-      const researchBrief = await callGemini(
-        env.GEMINI_API_KEY,
+      const researchBrief = await llm(
+        "promptEngineer",
         PROMPT_ENGINEER_SYSTEM,
         buildPromptEngineerMessage(input)
       );
@@ -264,7 +300,6 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
       });
 
       // Agent 2: Multi-Agent Research (parallel research agents with web search)
-      const provider = (env.RESEARCH_PROVIDER || "deepseek").toLowerCase();
       await sendSSE(writer, encoder, "agent", {
         agent: 2,
         name: "Research Team",
@@ -323,11 +358,12 @@ Research brief for context:\n${researchBrief}`,
             },
           ];
 
-      const research = provider === "anthropic"
+      const research = useClaude
         ? await callClaudeMultiAgentResearch(
             env.ANTHROPIC_API_KEY,
             researchBriefs,
             [8, 4],
+            cost,
           )
         : await callDeepSeekMultiAgentResearch(
             env.DEEPSEEK_API_KEY,
@@ -344,19 +380,18 @@ Research brief for context:\n${researchBrief}`,
         summary: `2 agents completed parallel research`,
       });
 
-      // Agent 3: Recipe Architect (Gemini free, JSON mode)
+      // Agent 3: Recipe Architect
       await sendSSE(writer, encoder, "agent", {
         agent: 3,
         name: "Recipe Architect",
         status: "running",
       });
 
-      const recipeJsonStr = await callGemini(
-        env.GEMINI_API_KEY,
+      const recipeJsonStr = await llm(
+        "architect",
         RECIPE_ARCHITECT_SYSTEM,
         buildRecipeArchitectMessage(research, input),
-        true, // JSON mode
-        "gemini-3-flash-preview" // Better reasoning for recipe synthesis
+        RECIPE_SCHEMA,
       );
 
       const recipeData = parseRecipeJSON(recipeJsonStr);
@@ -396,7 +431,10 @@ Research brief for context:\n${researchBrief}`,
         },
       });
 
-      await sendSSE(writer, encoder, "done", {});
+      if (useClaude) {
+        console.log(`Recipe "${recipeData.title}": ~$${cost.usd.toFixed(3)} (${cost.searches} web searches)`);
+      }
+      await sendSSE(writer, encoder, "done", useClaude ? { costUsd: Number(cost.usd.toFixed(3)) } : {});
     } catch (err) {
       console.error("Generation pipeline error:", err);
       const rawMessage = err instanceof Error ? err.message : "Unknown error";

@@ -42,7 +42,7 @@ export interface RecipeJSON {
 
 // Must stay in sync with the category enum in src/content.config.ts —
 // anything else fails the content collection schema at build time.
-const VALID_CATEGORIES = [
+export const VALID_CATEGORIES = [
   "Noodles",
   "Meat",
   "Seafood",
