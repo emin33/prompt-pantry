@@ -85,7 +85,7 @@ const DUPLICATE_CHECK_SYSTEM = `You check whether a requested dish is already on
 
 Return the slug of the existing recipe that is the SAME dish: one a home cook would treat as the same recipe even when the name differs a little (word order, a dropped adjective like "spicy" or "classic", spelling, "pasta fagioli" vs "pasta e fagioli", "tomato basil pappardelle" vs "spicy tomato basil pappardelle").
 Return an empty string when the request is a genuinely different dish, even if it shares an ingredient, cuisine or cooking method ("chicken tikka masala" is not "butter chicken"; "beef pho" is not "pad see ew").
-If the request asks for gluten-free and a gluten-free version exists, return that one. If several match, return the closest.
+If the request lists dietary restrictions, only return a recipe that already meets them (a gluten-free request matches a gluten-free version, never the regular one); if none does, return an empty string. If several match, return the closest.
 Respond with ONLY a JSON object: {"matchSlug": "<slug or empty string>"}.`;
 
 // timingSafeEqual kept for rate limit abuse detection
@@ -289,7 +289,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           : llm(
               "validator",
               DUPLICATE_CHECK_SYSTEM,
-              `Request: "${dish}" (${recipeType})\n\nExisting recipes:\n${catalog
+              `Request: "${dish}" (${recipeType})${input.dietary?.trim() ? `\nDietary restrictions: ${input.dietary.trim()}` : ""}\n\nExisting recipes:\n${catalog
                 .map((r) => `${r.slug} | ${r.title} | ${r.category}`)
                 .join("\n")}`,
               DUPLICATE_SCHEMA,
