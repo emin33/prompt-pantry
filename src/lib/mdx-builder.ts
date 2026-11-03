@@ -82,8 +82,12 @@ function validateDifficulty(difficulty: string): string {
   return match || "Medium"; // fallback
 }
 
-export function buildMDX(recipe: RecipeJSON, difficulty: string, recipeType?: string): string {
-  const slug = toSlug(recipe.title);
+export function buildMDX(
+  recipe: RecipeJSON,
+  difficulty: string,
+  recipeType?: string,
+  slug: string = toSlug(recipe.title),
+): string {
   const category = validateCategory(recipe.category, recipeType);
   const validDifficulty = validateDifficulty(difficulty);
   const totalTime = recipe.prepTime + recipe.cookTime + (recipe.restTime || 0);

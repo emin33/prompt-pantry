@@ -25,6 +25,10 @@ export interface GeneratorInput {
   servings: number;
   password: string;
   feedback?: string;
+  // Set when generating another version of a recipe the site already has.
+  allowDuplicate?: boolean;
+  existingSlug?: string;
+  variation?: string;
 }
 
 const DIFFICULTY_OPTIONS: {

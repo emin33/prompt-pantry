@@ -3,6 +3,7 @@ import {
   CLAUDE_MODELS,
   CostTracker,
   RECIPE_SCHEMA,
+  DUPLICATE_SCHEMA,
   VALIDATION_SCHEMA,
   callClaude,
   callClaudeMultiAgentResearch,
@@ -27,6 +28,7 @@ interface Env {
   TAVILY_API_KEY: string;
   RESEARCH_PROVIDER?: string;
   JWT_SECRET: string;
+  ASSETS: { fetch: (input: Request | URL | string) => Promise<Response> };
 }
 
 interface GenerateRequest {
@@ -38,7 +40,53 @@ interface GenerateRequest {
   servings: number;
   password: string;
   feedback?: string;
+  // Set when the user saw the "already exists" card and chose to make another version.
+  allowDuplicate?: boolean;
+  existingSlug?: string;
+  variation?: string;
 }
+
+interface CatalogRecipe {
+  slug: string;
+  title: string;
+  description: string;
+  cuisine: string;
+  category: string;
+  difficulty: string;
+  totalTime: number;
+  image?: string;
+}
+
+// The site's own prerendered catalog (src/pages/api/catalog.json.ts). An empty
+// list just means the duplicate check is skipped.
+async function loadCatalog(env: Env, requestUrl: string): Promise<CatalogRecipe[]> {
+  try {
+    const res = await env.ASSETS.fetch(new URL("/api/catalog.json", requestUrl));
+    if (!res.ok) return [];
+    const catalog = (await res.json()) as {
+      recipes: Array<{ id: string; data: Omit<CatalogRecipe, "slug"> }>;
+    };
+    return catalog.recipes.map(({ id, data }) => ({
+      slug: id,
+      title: data.title,
+      description: data.description,
+      cuisine: data.cuisine,
+      category: data.category,
+      difficulty: data.difficulty,
+      totalTime: data.totalTime,
+      image: data.image,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const DUPLICATE_CHECK_SYSTEM = `You check whether a requested dish is already on a recipe website. You get the request and the site's existing recipes as "slug | title | category" lines.
+
+Return the slug of the existing recipe that is the SAME dish: one a home cook would treat as the same recipe even when the name differs a little (word order, a dropped adjective like "spicy" or "classic", spelling, "pasta fagioli" vs "pasta e fagioli", "tomato basil pappardelle" vs "spicy tomato basil pappardelle").
+Return an empty string when the request is a genuinely different dish, even if it shares an ingredient, cuisine or cooking method ("chicken tikka masala" is not "butter chicken"; "beef pho" is not "pad see ew").
+If the request asks for gluten-free and a gluten-free version exists, return that one. If several match, return the closest.
+Respond with ONLY a JSON object: {"matchSlug": "<slug or empty string>"}.`;
 
 // timingSafeEqual kept for rate limit abuse detection
 function timingSafeEqual(a: string, b: string): boolean {
@@ -177,7 +225,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Step 0: Validate the dish is actually food
       await sendSSE(writer, encoder, "agent", {
         agent: 0,
-        name: "Validating Input",
         status: "running",
       });
 
@@ -203,7 +250,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (localInvalid) {
         recordFailedValidation(clientIP);
         await sendSSE(writer, encoder, "error", { message: localInvalid });
-        await writer.close();
         return;
       }
 
@@ -236,8 +282,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
               stage === "architect" ? "gemini-3-flash-preview" : undefined,
             );
 
+      const catalog = await loadCatalog(env, request.url);
+      const duplicateCheck =
+        input.allowDuplicate || catalog.length === 0
+          ? Promise.resolve("")
+          : llm(
+              "validator",
+              DUPLICATE_CHECK_SYSTEM,
+              `Request: "${dish}" (${recipeType})\n\nExisting recipes:\n${catalog
+                .map((r) => `${r.slug} | ${r.title} | ${r.category}`)
+                .join("\n")}`,
+              DUPLICATE_SCHEMA,
+            ).catch((err) => {
+              console.warn("Duplicate check failed, continuing:", err);
+              return "";
+            });
+
       // LLM validation for borderline cases
-      const validationResult = await llm(
+      const validationPromise = llm(
         "validator",
         recipeType === "drink"
           ? `You are a drink validator. Your ONLY job is to determine if the user's input is a real beverage — a cocktail, mocktail, or other drink that can be made. Respond with ONLY a JSON object: {"valid": true} or {"valid": false, "reason": "brief explanation"}.
@@ -257,6 +319,7 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
           : `Is this a valid food/dish to make a recipe for? "${dish}"`,
         VALIDATION_SCHEMA,
       );
+      const [validationResult, duplicateResult] = await Promise.all([validationPromise, duplicateCheck]);
 
       try {
         const validation = JSON.parse(validationResult);
@@ -265,24 +328,46 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
           await sendSSE(writer, encoder, "error", {
             message: validation.reason || `"${dish}" doesn't appear to be a real food or dish. Please enter a valid recipe name.`,
           });
-          await writer.close();
           return;
         }
       } catch {
         // If validation parsing fails, proceed anyway
       }
 
+      let existing: CatalogRecipe | undefined;
+      try {
+        const matchSlug = duplicateResult ? (JSON.parse(duplicateResult) as { matchSlug?: string }).matchSlug : "";
+        existing = catalog.find((r) => r.slug === matchSlug);
+      } catch {
+        // Unparseable duplicate check: treat as no match
+      }
+      if (existing) {
+        await sendSSE(writer, encoder, "duplicate", existing);
+        return;
+      }
+
+      // "Make a new one anyway": steer both the brief and the recipe away from the existing one.
+      const original = input.allowDuplicate
+        ? catalog.find((r) => r.slug === input.existingSlug)
+        : undefined;
+      const variationText = input.variation?.trim().slice(0, 500);
+      if (original) {
+        input.variation =
+          `We already have a recipe called "${original.title}". This must be a distinct new version, not a copy of it.` +
+          (variationText ? ` What should be different: "${variationText}".` : "");
+      } else {
+        input.variation = undefined;
+      }
+
       await sendSSE(writer, encoder, "agent", {
         agent: 0,
-        name: "Validating Input",
         status: "complete",
-        summary: "Valid dish confirmed",
+        summary: "Sounds delicious",
       });
 
       // Agent 1: Prompt Engineer
       await sendSSE(writer, encoder, "agent", {
         agent: 1,
-        name: "Prompt Engineer",
         status: "running",
       });
 
@@ -294,17 +379,14 @@ Be generous — if it could reasonably be a food or dish from any cuisine, it's 
 
       await sendSSE(writer, encoder, "agent", {
         agent: 1,
-        name: "Prompt Engineer",
         status: "complete",
-        summary: "Research brief prepared",
+        summary: "Game plan ready",
       });
 
       // Agent 2: Multi-Agent Research (parallel research agents with web search)
       await sendSSE(writer, encoder, "agent", {
         agent: 2,
-        name: "Research Team",
         status: "running",
-        detail: `Deploying 2 research agents in parallel via ${provider}...`,
       });
 
       const dishName = input.dish;
@@ -375,15 +457,13 @@ Research brief for context:\n${researchBrief}`,
 
       await sendSSE(writer, encoder, "agent", {
         agent: 2,
-        name: "Research Team",
         status: "complete",
-        summary: `2 agents completed parallel research`,
+        summary: "Done reading up",
       });
 
       // Agent 3: Recipe Architect
       await sendSSE(writer, encoder, "agent", {
         agent: 3,
-        name: "Recipe Architect",
         status: "running",
       });
 
@@ -395,12 +475,15 @@ Research brief for context:\n${researchBrief}`,
       );
 
       const recipeData = parseRecipeJSON(recipeJsonStr);
-      const mdx = buildMDX(recipeData, input.difficulty, recipeType);
-      const slug = toSlug(recipeData.title);
+      let slug = toSlug(recipeData.title);
+      // A deliberate second version can land on an existing slug; publish would refuse it.
+      for (let n = 2; catalog.some((r) => r.slug === slug); n++) {
+        slug = `${toSlug(recipeData.title)}-${n}`;
+      }
+      const mdx = buildMDX(recipeData, input.difficulty, recipeType, slug);
 
       await sendSSE(writer, encoder, "agent", {
         agent: 3,
-        name: "Recipe Architect",
         status: "complete",
       });
 

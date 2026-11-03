@@ -197,6 +197,10 @@ export const VALIDATION_SCHEMA = strictObject({
   reason: { type: "string" },
 });
 
+export const DUPLICATE_SCHEMA = strictObject({
+  matchSlug: { type: "string" },
+});
+
 /** Mirrors the JSON shape described in RECIPE_ARCHITECT_SYSTEM / RecipeJSON. */
 export const RECIPE_SCHEMA = strictObject({
   title: { type: "string" },

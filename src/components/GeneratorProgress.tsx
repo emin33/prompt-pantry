@@ -12,11 +12,11 @@ interface Props {
 }
 
 const agentDescriptions: Record<number, string> = {
-  0: "Checking that your input is a valid dish...",
-  1: "Crafting a detailed research brief...",
-  2: "Searching the web for renowned recipes and techniques...",
-  3: "Synthesizing research into your recipe...",
-  4: "Committing and deploying to the site...",
+  0: "Making sure we can cook this up...",
+  1: "Figuring out what makes a great version...",
+  2: "Reading up on how the best cooks make it...",
+  3: "Putting it all together...",
+  4: "Adding it to the site...",
 };
 
 export default function GeneratorProgress({ agents, error, onRetry }: Props) {
@@ -71,7 +71,7 @@ export default function GeneratorProgress({ agents, error, onRetry }: Props) {
                   </span>
                   {agent.status === "running" && (
                     <span className="text-xs text-terracotta">
-                      {agent.agent === 2 ? "searching..." : agent.agent === 4 ? "deploying..." : "thinking..."}
+                      {agent.agent === 4 ? "publishing..." : "working..."}
                     </span>
                   )}
                 </div>

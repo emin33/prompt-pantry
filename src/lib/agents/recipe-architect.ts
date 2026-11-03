@@ -83,6 +83,7 @@ export function buildRecipeArchitectMessage(
     cookware: string[];
     dietary: string;
     servings: number;
+    variation?: string;
   }
 ): string {
   const recipeType = input.recipeType || "food";
@@ -93,7 +94,7 @@ User preferences:
 - ${isDrink ? "Drink" : "Dish"}: ${input.dish}
 - Difficulty: ${input.difficulty}. ${difficultyDirective(input.difficulty, recipeType)}
 ${isDrink ? "" : `- Available cookware: ${input.cookware.join(", ")}\n`}${input.dietary ? `- Dietary restrictions: ${input.dietary}\n` : ""}- Target ${isDrink ? "number of drinks" : "servings"}: ${input.servings}
-
+${input.variation ? `- ${input.variation} Give it a title that tells the two apart.\n` : ""}
 Research findings:
 ${research}`;
 }

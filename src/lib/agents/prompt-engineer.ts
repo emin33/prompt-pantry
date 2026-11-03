@@ -34,6 +34,7 @@ export function buildPromptEngineerMessage(input: {
   dietary: string;
   servings: number;
   feedback?: string;
+  variation?: string;
 }): string {
   const recipeType = input.recipeType || "food";
   const parts = [
@@ -59,6 +60,10 @@ export function buildPromptEngineerMessage(input: {
 
   if (input.feedback) {
     parts.push(`\nIMPORTANT — User feedback from a previous generation attempt. The user was not satisfied and wants these changes:\n"${input.feedback}"\n\nPlease incorporate this feedback into your research brief so the final recipe addresses these concerns.`);
+  }
+
+  if (input.variation) {
+    parts.push(`\nIMPORTANT — ${input.variation}`);
   }
 
   return parts.join("\n");

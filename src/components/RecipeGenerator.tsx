@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import GeneratorForm, { type GeneratorInput } from "./GeneratorForm";
 import GeneratorProgress from "./GeneratorProgress";
 import RecipePreview from "./RecipePreview";
+import DuplicateRecipeCard, { type ExistingRecipe } from "./DuplicateRecipeCard";
 
 // Default cookware list duplicated from GeneratorForm so we can build a
 // full GeneratorInput when Carl hands off — he doesn't collect cookware.
@@ -35,7 +36,8 @@ interface CarlHandoff {
   ts?: number;
 }
 
-type State = "idle" | "generating" | "preview" | "publishing" | "deploying" | "published";
+type State = "idle" | "generating" | "duplicate" | "preview" | "publishing" | "deploying" | "published";
+type KnowledgeBaseStatus = "added" | "failed" | "skipped";
 
 interface AgentStatus {
   agent: number;
@@ -53,10 +55,10 @@ interface RecipeResult {
 }
 
 const generationAgents: AgentStatus[] = [
-  { agent: 0, name: "Validating Input", status: "pending" },
-  { agent: 1, name: "Prompt Engineer", status: "pending" },
-  { agent: 2, name: "Research Team", status: "pending" },
-  { agent: 3, name: "Recipe Architect", status: "pending" },
+  { agent: 0, name: "Checking your request", status: "pending" },
+  { agent: 1, name: "Planning the dish", status: "pending" },
+  { agent: 2, name: "Researching", status: "pending" },
+  { agent: 3, name: "Writing your recipe", status: "pending" },
 ];
 
 export default function RecipeGenerator() {
@@ -66,6 +68,9 @@ export default function RecipeGenerator() {
   const [recipe, setRecipe] = useState<RecipeResult | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<GeneratorInput | null>(null);
+  const [existingRecipe, setExistingRecipe] = useState<ExistingRecipe | null>(null);
+  const [costUsd, setCostUsd] = useState<number | null>(null);
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseStatus | null>(null);
   const [jwtToken, setJwtToken] = useState<string | null>(null);
   // Parallel ref so handleGenerate (memoized with []) can read the JWT
   // synchronously during Carl's handoff. setJwtToken is async — by the
@@ -128,9 +133,13 @@ export default function RecipeGenerator() {
     setRecipe(null);
     setPublishError(null);
     setLastInput(input);
+    setExistingRecipe(null);
+    setCostUsd(null);
+    setKnowledgeBase(null);
     setAgents(generationAgents.map((a) => ({ ...a, status: "pending" })));
 
     let receivedRecipe: RecipeResult | null = null;
+    let receivedDuplicate: ExistingRecipe | null = null;
 
     const handleSSEEvent = (event: string, data: Record<string, unknown>) => {
       switch (event) {
@@ -159,7 +168,12 @@ export default function RecipeGenerator() {
           // Stay on generating view so user can see the error alongside progress
           break;
 
+        case "duplicate":
+          receivedDuplicate = data as unknown as ExistingRecipe;
+          break;
+
         case "done":
+          if (typeof data.costUsd === "number") setCostUsd(data.costUsd);
           break;
       }
     };
@@ -182,6 +196,7 @@ export default function RecipeGenerator() {
         }
         const authData = await authRes.json() as { token: string };
         token = authData.token;
+        jwtTokenRef.current = token;
         setJwtToken(token);
       }
 
@@ -247,7 +262,14 @@ export default function RecipeGenerator() {
         "receivedRecipe:", !!receivedRecipe,
         "title:", (receivedRecipe as { title?: string } | null)?.title,
       );
-      if (receivedRecipe) {
+      if (receivedDuplicate) {
+        const dup = receivedDuplicate as ExistingRecipe;
+        setExistingRecipe(dup);
+        setState("duplicate");
+        void notifyCarl("generation_failed", {
+          error: `We already have this recipe: ${dup.title} (/recipes/${dup.slug})`,
+        });
+      } else if (receivedRecipe) {
         setState("preview");
         // Tell Carl the recipe is ready so he can narrate it to the cook.
         // receivedRecipe is the most recent "recipe" SSE event payload.
@@ -272,13 +294,13 @@ export default function RecipeGenerator() {
 
     setAgents([
       ...generationAgents.map((a) => ({ ...a, status: "complete" as const })),
-      { agent: 4, name: "Publishing & Deploying", status: "running" as const, summary: "Committing to repository..." },
+      { agent: 4, name: "Publishing", status: "running" as const, summary: "Adding it to the site..." },
     ]);
 
     try {
       const res = await fetch("/api/publish-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwtToken}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwtToken || jwtTokenRef.current}` },
         body: JSON.stringify({
           slug: recipe.slug,
           mdx: recipe.mdx,
@@ -291,12 +313,13 @@ export default function RecipeGenerator() {
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
+      setKnowledgeBase((data.knowledgeBase as KnowledgeBaseStatus | undefined) ?? null);
 
       setState("deploying");
       setAgents((prev) =>
         prev.map((a) =>
           a.agent === 4
-            ? { ...a, summary: "Building & deploying — waiting for site to update..." }
+            ? { ...a, summary: "Almost there, the page is going live..." }
             : a
         )
       );
@@ -333,6 +356,7 @@ export default function RecipeGenerator() {
   const handleRegenerate = () => {
     setState("idle");
     setRecipe(null);
+    setExistingRecipe(null);
     setError(null);
     setPublishError(null);
     setAgents(generationAgents.map((a) => ({ ...a, status: "pending" })));
@@ -341,6 +365,11 @@ export default function RecipeGenerator() {
   const handleRegenerateWithFeedback = (feedback: string) => {
     if (!lastInput) return;
     handleGenerate({ ...lastInput, feedback });
+  };
+
+  const handleMakeAnyway = (variation: string) => {
+    if (!lastInput || !existingRecipe) return;
+    handleGenerate({ ...lastInput, allowDuplicate: true, existingSlug: existingRecipe.slug, variation });
   };
 
   // ─── Carl handoff: auto-start the generation when ?fromCarl=1 is present ──
@@ -432,6 +461,16 @@ export default function RecipeGenerator() {
         <GeneratorProgress agents={agents} error={error} onRetry={handleRegenerate} />
       )}
 
+      {/* Already on the site: link to it, or knowingly make another version */}
+      {state === "duplicate" && existingRecipe && lastInput && (
+        <DuplicateRecipeCard
+          recipe={existingRecipe}
+          dish={lastInput.dish}
+          onMakeAnyway={handleMakeAnyway}
+          onBack={handleRegenerate}
+        />
+      )}
+
       {/* Preview — shown after generation, before publish */}
       {state === "preview" && recipe && (
         <RecipePreview
@@ -446,6 +485,11 @@ export default function RecipeGenerator() {
           publishError={publishError}
         />
       )}
+      {state === "preview" && costUsd !== null && (
+        <p className="mt-4 text-center text-xs text-muted">
+          This recipe cost about ${costUsd.toFixed(2)} to generate.
+        </p>
+      )}
 
       {/* Published — show success with link */}
       {state === "published" && recipe && (
@@ -455,6 +499,14 @@ export default function RecipeGenerator() {
           </svg>
           <h3 className="font-display text-2xl text-charcoal">Recipe Published!</h3>
           <p className="text-warm-gray">{recipe.title} is now live on the site.</p>
+          {knowledgeBase === "added" && (
+            <p className="text-sm text-sage-dark">Chef Carl has the research in his knowledge base.</p>
+          )}
+          {knowledgeBase === "failed" && (
+            <p className="text-sm text-terracotta-dark">
+              The research didn't reach Chef Carl's knowledge base. It's saved on the site, so it can be re-uploaded.
+            </p>
+          )}
           <div className="flex justify-center gap-4">
             <a
               href={`/recipes/${recipe.slug}`}

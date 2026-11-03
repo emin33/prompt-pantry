@@ -18,10 +18,12 @@ interface PublishRequest {
 const ALLOWED_ORIGIN = "https://promptpantry.org";
 const GITHUB_REPO = "emin33/prompt-pantry";
 
+type KnowledgeBaseStatus = "added" | "failed" | "skipped";
+
 async function uploadResearchToDatasphere(
   env: Env,
   slug: string,
-): Promise<void> {
+): Promise<KnowledgeBaseStatus> {
   const space = env.SIGNALWIRE_SPACE_NAME;
   const projectId = env.SIGNALWIRE_PROJECT_ID;
   const token = env.SIGNALWIRE_TOKEN;
@@ -29,7 +31,7 @@ async function uploadResearchToDatasphere(
     console.warn(
       `[datasphere] skipping upload for ${slug}: SignalWire env vars not set`,
     );
-    return;
+    return "skipped";
   }
   // Use raw GitHub URL — available the instant the commit lands, so we
   // don't have to wait for the Cloudflare Pages rebuild. The deployed
@@ -55,16 +57,18 @@ async function uploadResearchToDatasphere(
       console.error(
         `[datasphere] upload failed for ${slug}: ${res.status} ${(await res.text()).slice(0, 300)}`,
       );
-      return;
+      return "failed";
     }
     const data = await res.json() as { id?: string; status?: string };
     console.log(
       `[datasphere] uploaded ${slug}: id=${data.id} status=${data.status}`,
     );
+    return "added";
   } catch (err) {
     console.error(
       `[datasphere] upload error for ${slug}: ${err instanceof Error ? err.message : "unknown"}`,
     );
+    return "failed";
   }
 }
 
@@ -161,6 +165,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Commit research report if provided
+    let knowledgeBase: KnowledgeBaseStatus = "skipped";
     if (input.research) {
       const researchPath = `public/research/${slug}.md`;
       const researchContent = btoa(
@@ -183,13 +188,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
       );
 
-      // Fire-and-forget Datasphere upload once the research is in GitHub.
-      // Uses raw.githubusercontent.com so we don't have to wait for the
-      // Cloudflare rebuild. context.waitUntil keeps the function alive
-      // past the response without blocking the user.
+      // Datasphere upload once the research is in GitHub. Uses
+      // raw.githubusercontent.com so we don't have to wait for the Cloudflare
+      // rebuild. Awaited (one quick POST) so the generator can tell the user
+      // whether Carl actually got the research.
       if (researchRes.ok) {
-        context.waitUntil(uploadResearchToDatasphere(env, slug));
+        knowledgeBase = await uploadResearchToDatasphere(env, slug);
       } else {
+        knowledgeBase = "failed";
         console.error(
           `[datasphere] skipping upload for ${slug}: research commit failed (${researchRes.status})`,
         );
@@ -204,6 +210,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({
       success: true,
       url: `/recipes/${slug}`,
+      knowledgeBase,
       message:
         "Recipe published! It will be live in about 30 seconds after the site rebuilds.",
     }, {
