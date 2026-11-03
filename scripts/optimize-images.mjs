@@ -65,8 +65,12 @@ async function convertOne(source, slug) {
   if (!existsSync(source)) throw new Error(`No such file: ${source}`);
   if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`Slug must be lowercase letters, digits and dashes: ${slug}`);
   const output = path.join(IMAGES_DIR, `${slug}.webp`);
+  // Case-insensitive: on Windows, Gumbo.webp and gumbo.webp are the same file.
+  if (path.resolve(source).toLowerCase() === path.resolve(output).toLowerCase()) {
+    throw new Error(`${source} is already the published ${slug}.webp; run "npm run images" with no args to shrink it in place`);
+  }
   const before = statSync(source).size;
-  const after = await encodeWebp(source, output);
+  const after = await encodeWebp(readFileSync(source), output);
   console.log(`${source} (${kb(before)}) -> ${output} (${kb(after)})`);
   if (path.resolve(path.dirname(source)) === path.resolve(IMAGES_DIR)) {
     console.log(`  original moved to ${moveToSources(source)}`);
